@@ -1,8 +1,37 @@
 # Deployment Status - Appointment Guard Backend
 
-## Current Status: ⚠️ AWAITING MANUAL RAILWAY GITHUB CONNECTION
+## Current Status: ❌ BLOCKED - INVALID RAILWAY TOKEN
 
-**Last Updated:** 2026-04-19 07:38 AM EDT (Overnight Monitor)
+**Last Updated:** 2026-04-19 07:45 AM EDT (Overnight Monitor)
+
+---
+
+### 🔴 Critical Issue: GitHub Actions Failing Due to Invalid Token
+
+```
+Unauthorized. Please check that your RAILWAY_TOKEN is valid and has access 
+to the resource you're trying to use.
+```
+
+**GitHub Actions Run:** #24624077357 - FAILED at "Link to existing project" step
+**Root Cause:** The `RAILWAY_TOKEN` secret stored in GitHub repository settings is expired/invalid
+
+---
+
+### Required Action: Update Railway Token or Use Dashboard Connection
+
+**Option 1 (Recommended): Connect via Railway Dashboard**
+1. Go to https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585/settings/github
+2. Click "Connect a Repository"
+3. Select `tnowakow/appointment-guard`
+4. Enable auto-deploy on main branch
+5. Add environment variables in Variables tab
+
+**Option 2: Update GitHub Secret**
+1. Go to https://github.com/tnowakow/appointment-guard/settings/secrets/actions
+2. Find `RAILWAY_TOKEN` secret
+3. Generate new token at https://railway.app/account/security
+4. Update the secret with new token value
 
 ---
 
