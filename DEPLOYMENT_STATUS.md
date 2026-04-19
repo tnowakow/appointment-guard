@@ -1,42 +1,61 @@
 # Deployment Status - Appointment Guard Backend
 
-## Current Status: ⚠️ DEPLOYMENT BLOCKED - Railway Connection Required
+## Current Status: ⚠️ AWAITING MANUAL RAILWAY CONNECTION
 
-**Last Updated:** 2026-04-19 07:00 EDT (Overnight Monitor)
+**Last Updated:** 2026-04-19 07:08 EDT (Overnight Monitor)
 
-### Issue Summary
-The application code is working correctly locally, but Railway deployment is not connected to the GitHub repository. The health endpoint returns 404 because no active deployment exists.
+---
 
-### What's Working ✅
-- **Local imports verified:** All modules import successfully (`from main import app` works)
-- **Code structure correct:** `main.py`, `risk_scoring.py`, `intervention_agent.py`, `core/`, `agents/` all properly configured
-- **Procfile updated:** Using `uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}`
-- **railway.toml fixed:** Removed conflicting startCommand, now using Procfile
-- **.gitignore added:** Prevents pycache files from being committed
+### Health Check Result ❌
+```bash
+curl https://appointment-guard-production.up.railway.app/health
+# Response: {"status":"error","code":404,"message":"Application not found"}
+```
 
-### What's NOT Working ❌
-- **Railway connection missing:** The GitHub repository `tnowakow/appointment-guard` is not connected to Railway project `fda2073b-d325-4734-8dd6-20deb81eb585`
-- **No active deployment:** Health endpoint returns 404 - application not found
-- **GitHub Actions workflow enabled but needs RAILWAY_TOKEN secret**
+**Root Cause:** Railway project is NOT connected to GitHub repository for auto-deployment.
 
-### Recent Changes (This Session)
-1. ✅ Fixed Procfile to use proper PORT variable with fallback
-2. ✅ Removed conflicting startCommand from railway.toml  
-3. ✅ Added .gitignore for Python cache files
-4. ✅ Enabled GitHub Actions deployment workflow
-5. ✅ Pushed all changes to main branch
+---
 
-### Required Action - Manual Railway Setup (5 minutes)
+### ✅ What's Working (Code Side Complete)
 
-**The code is ready and tested.** Railway needs to be connected manually via the dashboard:
+| Item | Status | Details |
+|------|--------|---------|
+| Local imports | ✅ Verified | `python3 -c "from main import app"` succeeds |
+| Procfile | ✅ Fixed | Uses `uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}` |
+| railway.toml | ✅ Cleaned | Removed conflicting startCommand |
+| .gitignore | ✅ Added | Prevents pycache files in repo |
+| GitHub Actions | ✅ Enabled | Fallback deployment method ready |
+| Code pushed | ✅ Latest commit: `53ece32` | All fixes on main branch |
+
+---
+
+### ❌ What's Blocking Deployment
+
+**Railway CLI Authentication Failed:**
+- Token in `~/.config/railway/config.json` appears invalid/expired
+- Cannot authenticate via browserless mode (requires interactive login)
+- API calls return "Not Found" or "Unauthorized"
+
+**GitHub Repository Not Connected to Railway:**
+- Project ID: `fda2073b-d325-4734-8dd6-20deb81eb585`
+- Repo: `tnowakow/appointment-guard`
+- Connection must be established via Railway dashboard
+
+---
+
+### 🔧 Required Action (Manual - 5 minutes)
 
 #### Option A: Connect Existing Project (Recommended)
-1. Go to: https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585
-2. Click **Settings** → **GitHub** tab
-3. Click **"Connect a Repository"** or **"Add GitHub App"**
-4. Select repository: `tnowakow/appointment-guard`
-5. Enable auto-deploy on main branch
-6. Add environment variables in **Variables** tab:
+
+1. **Open Railway Dashboard:** https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585
+
+2. **Connect GitHub Repository:**
+   - Click **Settings** → **GitHub** tab
+   - Click **"Connect a Repository"** or **"Add GitHub App"**  
+   - Select: `tnowakow/appointment-guard`
+   - Enable auto-deploy on main branch
+
+3. **Add Environment Variables** (Variables tab):
    ```bash
    TWILIO_ACCOUNT_SID=<your_twilio_sid>
    TWILIO_AUTH_TOKEN=<your_twilio_token>
@@ -45,7 +64,16 @@ The application code is working correctly locally, but Railway deployment is not
    SUPABASE_ANON_KEY=<your_supabase_key>
    ```
 
+4. **Wait 2-3 minutes** for auto-deployment
+
+5. **Verify:**
+   ```bash
+   curl https://appointment-guard-production.up.railway.app/health
+   # Expected: {"status":"healthy","version":"1.0.0"}
+   ```
+
 #### Option B: Create New Project from GitHub
+
 1. Go to: https://railway.app/new
 2. Click **"Deploy from GitHub repo"**
 3. Select: `tnowakow/appointment-guard`
@@ -53,26 +81,40 @@ The application code is working correctly locally, but Railway deployment is not
 5. Add environment variables as shown above
 
 #### Option C: Use GitHub Actions (Alternative)
-1. Generate Railway token at: https://railway.app/account/tokens
-2. Go to GitHub repo: https://github.com/tnowakow/appointment-guard/settings/secrets/actions
-3. Add new secret: `RAILWAY_TOKEN` with your token value
-4. Next push to main will trigger deployment via GitHub Actions
 
-### Verification Steps
-After deployment is connected and running:
+1. Generate Railway token: https://railway.app/account/tokens
+2. Go to GitHub repo secrets: https://github.com/tnowakow/appointment-guard/settings/secrets/actions
+3. Add new secret: `RAILWAY_TOKEN` = `<your_token>`
+4. Next push triggers deployment automatically
+
+---
+
+### 📊 Monitoring Status
+
+- **Session:** Overnight Monitor (cron job)
+- **Started:** 2026-04-19 02:53 AM EDT
+- **Last Health Check:** 2026-04-19 07:08 AM EDT - 404 Not Found
+- **Next Action:** Awaiting manual Railway connection
+
+---
+
+### 📝 Files Updated This Session
+
+| File | Change | Commit |
+|------|--------|--------|
+| `Procfile` | Fixed PORT variable with fallback | `6b916a5` |
+| `railway.toml` | Removed conflicting startCommand | `6b916a5` |
+| `.gitignore` | Added Python cache exclusions | `a80bbd8` |
+| `.github/workflows/deploy-to-railway.yml` | Enabled GitHub Actions deployment | `893da60` |
+| `DEPLOYMENT_STATUS.md` | Updated with current status | `12f86e1` |
+| `DEPLOY_ACTION_ITEMS.md` | Added clear action items | `53ece32` |
+
+---
+
+### 🎯 Success Criteria
+
+Deployment is complete when:
 ```bash
-# Check health endpoint
 curl https://appointment-guard-production.up.railway.app/health
-
-# Expected response:
-{"status":"healthy","version":"1.0.0"}
+# Returns: {"status":"healthy","version":"1.0.0"} with HTTP 200
 ```
-
-### Railway Project Details
-- **Project ID:** `fda2073b-d325-4734-8dd6-20deb81eb585`
-- **Service Name:** `appointment-guard`
-- **GitHub Repo:** `tnowakow/appointment-guard`
-- **Branch:** main
-
-### Next Monitor Check
-Continue monitoring until health endpoint returns 200 OK. If Railway connection is established, deployment should complete within 2-3 minutes of connection.
