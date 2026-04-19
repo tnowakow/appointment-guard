@@ -20,8 +20,13 @@ jobs:
         run: npm install -g @railway/cli@latest
       
       - name: Login to Railway
-        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
-        if: secrets.RAILWAY_TOKEN != ''
+        run: |
+          if [ -n "${{ secrets.RAILWAY_TOKEN }}" ]; then
+            echo "Logging into Railway..."
+            railway login --token ${{ secrets.RAILWAY_TOKEN }}
+          else
+            echo "No RAILWAY_TOKEN secret found, skipping login"
+          fi
       
       - name: Link to Project
         run: |
