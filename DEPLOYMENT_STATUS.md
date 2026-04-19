@@ -1,8 +1,8 @@
 # Deployment Status - Appointment Guard Backend
 
-## Current Status: ⚠️ AWAITING MANUAL RAILWAY CONNECTION
+## Current Status: ⚠️ AWAITING MANUAL RAILWAY GITHUB CONNECTION
 
-**Last Updated:** 2026-04-19 07:15 EDT (Overnight Monitor)
+**Last Updated:** 2026-04-19 07:38 AM EDT (Overnight Monitor)
 
 ---
 
@@ -22,24 +22,19 @@ curl https://appointment-guard-production.up.railway.app/health
 |------|--------|---------|
 | Local imports | ✅ Verified | `python3 -c "from main import app"` succeeds |
 | Procfile | ✅ Fixed | Uses `uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}` |
-| railway.toml | ✅ Cleaned | Removed conflicting startCommand |
-| .gitignore | ✅ Added | Prevents pycache files in repo |
-| GitHub Actions | ⚠️ Disabled | Using Railway native integration instead |
-| Code pushed | ✅ Latest commit: `8cf43d6` | All fixes on main branch |
+| railway.toml | ✅ Configured | Nixpacks builder, Python 3.11 |
+| pyproject.toml | ✅ Added | Proper package definition for Nixpacks |
+| .gitignore | ✅ Updated | Prevents pycache files in repo |
+| Code pushed | ✅ Latest commit: `86279f0` | All fixes on main branch |
 
 ---
 
 ### ❌ What's Blocking Deployment
 
-**Railway Token Invalid:**
-- The token in the repo (`00c9be57...`) is expired/invalid
-- GitHub Actions deployment fails with "Unauthorized" error
-- **Solution:** Use Railway native GitHub integration (no token needed)
-
 **GitHub Repository Not Connected to Railway:**
 - Project ID: `fda2073b-d325-4734-8dd6-20deb81eb585`
 - Repo: `tnowakow/appointment-guard`
-- Connection must be established via Railway dashboard
+- Connection must be established via Railway dashboard (no CLI token available)
 
 ---
 
@@ -80,8 +75,8 @@ curl https://appointment-guard-production.up.railway.app/health
 
 - **Session:** Overnight Monitor (cron job)
 - **Started:** 2026-04-19 02:53 AM EDT
-- **Last Health Check:** 2026-04-19 07:15 AM EDT - 404 Not Found
-- **Code Status:** ✅ All fixes complete, ready to deploy
+- **Last Health Check:** 2026-04-19 07:38 AM EDT - 404 Not Found
+- **Code Status:** ✅ All fixes complete, pyproject.toml added, ready to deploy
 - **Blocker:** ⚠️ Manual Railway dashboard connection required
 
 ---
@@ -90,12 +85,8 @@ curl https://appointment-guard-production.up.railway.app/health
 
 | File | Change | Commit |
 |------|--------|--------|
-| `Procfile` | Fixed PORT variable with fallback | `6b916a5` |
-| `railway.toml` | Removed conflicting startCommand | `6b916a5` |
-| `.gitignore` | Added Python cache exclusions | `a80bbd8` |
-| `.github/workflows/deploy-to-railway.yml` | Enabled GitHub Actions deployment | `893da60` |
-| `DEPLOYMENT_STATUS.md` | Updated with current status | `12f86e1` |
-| `DEPLOY_ACTION_ITEMS.md` | Added clear action items | `53ece32` |
+| `pyproject.toml` | Added for Nixpacks Python detection | `86279f0` |
+| `DEPLOYMENT_STATUS.md` | Updated with current status | (pending) |
 
 ---
 
