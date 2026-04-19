@@ -216,3 +216,44 @@ The error message was misleading. Actual investigation revealed:
 - Consider setting up deployment during business hours when browser interaction is possible
 
 **Status:** Awaiting Tom's manual Railway project creation via https://railway.app/new/import
+---
+
+## Lesson 8: Morning Check Confirms Same Auth Barrier - No Progress Possible Without Browser
+**Date:** 2026-04-19 (9:08 AM EDT)
+**Project:** appointment-guard
+**Symptom:** Cron job triggered again with same "ModuleNotFoundError" message; health endpoint still returns 404
+
+**Root Cause:**
+Same as Lesson 7 — no new information discovered:
+- Code is fully functional locally (verified: `python3 -c "from main import app"` works)
+- No deployment exists on Railway (health check returns 404)
+- RAILWAY_TOKEN in GitHub secrets is invalid/expired
+- Railway CLI has no valid credentials (`~/.railway/config.json` all null)
+- Browser-based OAuth required for initial project setup — cannot be automated
+- Web search confirms: Railway requires either browser OAuth or valid API token; no workaround exists
+
+**Investigation Summary:**
+1. ✅ Local imports verified working
+2. ✅ Health endpoint tested: returns 404 (no deployment)
+3. ✅ GitHub Actions workflow checked: disabled due to invalid RAILWAY_TOKEN
+4. ✅ Railway CLI config checked: all tokens null
+5. ✅ Web search for alternatives: no programmatic workaround exists without valid token
+6. ❌ Cannot create deployment without browser interaction or valid API token
+
+**Fix:**
+None possible automatically. Tom must manually:
+1. Go to https://railway.app/new/import
+2. Sign in with GitHub
+3. Select repository: `tnowakow/appointment-guard`
+4. Click "Deploy Now"
+5. Add environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)
+6. Wait 2-3 minutes for deployment
+7. Verify: `curl https://<project-name>.up.railway.app/health` returns HTTP 200
+
+**Prevention:**
+- Set up Railway/GitHub integration during business hours when browser access is available
+- For future projects, complete initial deployment setup before relying on automated monitoring
+- If using RAILWAY_TOKEN, test it immediately after generation and document expiration date
+- Consider platforms with better programmatic auth for fully automated deployments (Vercel CLI, Render CLI)
+
+**Status:** BLOCKED - requires manual browser-based Railway authentication. Will re-check health endpoint on next cron run.
