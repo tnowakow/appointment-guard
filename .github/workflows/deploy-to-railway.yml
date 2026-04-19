@@ -1,4 +1,8 @@
-name: Deploy to Railway
+# Note: This workflow is disabled. Railway auto-deploys via GitHub integration.
+# The project is connected at https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585
+# All pushes to main branch automatically trigger deployments through Railway's native integration.
+
+name: Deploy to Railway (Disabled - Using Native Integration)
 
 on:
   push:
@@ -6,49 +10,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  notify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli@latest
-      
-      - name: Login to Railway and Link Project
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          if [ -n "$RAILWAY_TOKEN" ]; then
-            echo "Logging into Railway..."
-            railway login --token "$RAILWAY_TOKEN" --skip-github-login 2>/dev/null || true
-            echo "Linking to project fda2073b-d325-4734-8dd6-20deb81eb585..."
-            railway link --project fda2073b-d325-4734-8dd6-20deb81eb585
-          else
-            echo "No RAILWAY_TOKEN secret found, skipping Railway deployment"
-            exit 1
-          fi
-      
-      - name: Deploy to Railway
-        run: |
-          railway up --detach
-      
-      - name: Get Deployment URL
-        id: deploy-url
-        run: |
-          URL=$(railway variables get PUBLIC_URL 2>/dev/null || echo "")
-          if [ -z "$URL" ]; then
-            # Try to get the service URL
-            SERVICE_INFO=$(railway status --json 2>/dev/null || echo '{}')
-            echo "Service info: $SERVICE_INFO"
-          fi
-          echo "deployment_complete=true" >> $GITHUB_OUTPUT
-      
       - name: Notify Deployment Status
         run: |
-          echo "✅ Deployment triggered to Railway project fda2073b-d325-4734-8dd6-20deb81eb585"
-          echo "📝 Check Railway dashboard for status: https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585"
+          echo "✅ Code pushed to GitHub"
+          echo "🚀 Railway will auto-deploy via native GitHub integration"
+          echo "📝 Check deployment status at: https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585"
