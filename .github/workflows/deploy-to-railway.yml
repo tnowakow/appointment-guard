@@ -3,6 +3,7 @@ name: Deploy to Railway
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -10,12 +11,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Notify Deployment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@latest
+      
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+        if: secrets.RAILWAY_TOKEN != ''
+      
+      - name: Link to Project
         run: |
-          echo "🚀 Code pushed to Railway project"
-          echo "Railway will auto-deploy when connected via GitHub integration"
-          echo ""
-          echo "To connect:"
-          echo "1. Go to https://railway.app/new/connect"
-          echo "2. Select repository: tnowakow/appointment-guard"
-          echo "3. Add environment variables in Railway dashboard"
+          railway link --project fda2073b-d325-4734-8dd6-20deb81eb585
+      
+      - name: Deploy to Railway
+        run: |
+          railway up --detach
+      
+      - name: Get Deployment URL
+        id: deploy-url
+        run: |
+          URL=$(railway variables get PUBLIC_URL 2>/dev/null || echo "")
+          if [ -z "$URL" ]; then
+            # Try to get the service URL
+            SERVICE_INFO=$(railway status --json 2>/dev/null || echo '{}')
+            echo "Service info: $SERVICE_INFO"
+          fi
+          echo "deployment_complete=true" >> $GITHUB_OUTPUT
+      
+      - name: Notify Deployment Status
+        run: |
+          echo "✅ Deployment triggered to Railway project fda2073b-d325-4734-8dd6-20deb81eb585"
+          echo "📝 Check Railway dashboard for status: https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585"
