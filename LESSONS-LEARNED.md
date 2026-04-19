@@ -146,3 +146,32 @@ Create a new deployment via Railway dashboard:
 ---
 
 <!-- NEW LESSONS GO BELOW THIS LINE -->
+
+## Lesson 6: Overnight Monitor Cannot Complete Railway Deployment Without Browser Auth
+**Date:** 2026-04-19 (5:56 AM EDT)
+**Project:** appointment-guard
+**Symptom:** Cron job triggered to fix deployment, but cannot proceed due to authentication barrier.
+
+**Root Cause:**
+- Railway requires browser-based OAuth login for initial project setup
+- Stored RAILWAY_TOKEN is invalid/expired
+- `railway login` CLI fails in non-interactive mode: "Cannot login in non-interactive mode"
+- No deployment exists on Railway (health check returns 404)
+- Code is 100% ready and working locally, but cannot be deployed without manual intervention
+
+**Fix:**
+- Updated DEPLOYMENT_STATUS.md with clear morning action items for Tom
+- Committed status update to GitHub so Tom sees it when he checks the repo
+- Documented exact steps needed: create Railway project via dashboard, add env vars, verify health endpoint
+- Overnight monitor will re-check on next run after manual deployment is complete
+
+**Prevention:**
+- For future projects requiring deployment automation:
+  - Set up Railway/GitHub integration during initial setup (not during overnight hours)
+  - Store valid RAILWAY_TOKEN in GitHub secrets and test it before relying on automated deployments
+  - Consider alternative platforms with better programmatic auth (Vercel, Render, Fly.io)
+  - If browser-based OAuth is required, schedule deployment tasks for business hours or require manual trigger
+- Cron job descriptions should distinguish between "code errors" vs "infrastructure/auth blockers"
+
+**Resolution Path:**
+Tom needs to manually create Railway project via https://railway.app/new/import during waking hours. Once deployed, automated monitoring can resume.
