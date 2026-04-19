@@ -108,4 +108,41 @@ The only way to resolve this is manual intervention:
 - Distinguish between deployment infrastructure issues vs. application code issues
 ---
 
+## Lesson 5: Health Check 404 Means No Deployment, Not Code Error
+**Date:** 2026-04-19  
+**Project:** appointment-guard  
+**Symptom:** `curl https://appointment-guard-production.up.railway.app/health` returns `{"status":"error","code":404,"message":"Application not found"}`
+
+**Root Cause:** 
+The Railway project exists but has no service deployed. A 404 from Railway means:
+- The project URL is valid (Railway recognizes it)
+- But no deployment/service is running at that URL
+- This is NOT a code error - the app simply doesn't exist on Railway yet
+
+**Verification:**
+```bash
+# Check if project exists but has no deployment
+curl -sI "https://appointment-guard-production.up.railway.app/health"
+# Returns: HTTP/2 404 with x-railway-cdn-edge header
+
+# This confirms Railway is responding, just no app deployed
+```
+
+**Fix:** 
+Create a new deployment via Railway dashboard:
+1. Go to https://railway.app/new/import
+2. Select GitHub repo: `tnowakow/appointment-guard`
+3. Add environment variables (Twilio + Supabase)
+4. Wait 2-3 minutes for auto-deployment
+5. Verify with health check returning HTTP 200
+
+**Prevention:** 
+- When troubleshooting, distinguish between:
+  - **404 Not Found**: App not deployed yet (infrastructure issue)
+  - **500 Internal Server Error**: App deployed but has runtime errors (code issue)
+  - **Connection refused/timeout**: Wrong URL or Railway project doesn't exist
+- Always check HTTP status code, not just response body
+- Test locally first: `uvicorn main:app` should start without errors before deployment
+---
+
 <!-- NEW LESSONS GO BELOW THIS LINE -->
