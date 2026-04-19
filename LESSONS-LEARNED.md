@@ -27,4 +27,30 @@
 - If using GitHub Actions, verify RAILWAY_TOKEN secret is valid before relying on it
 ---
 
+## Lesson 2: Code Works Locally But Deployment Blocked by Auth (Not Import Errors)
+**Date:** 2026-04-19  
+**Project:** appointment-guard  
+**Symptom:** Cron job reported "ModuleNotFoundError or import issues" but actual investigation showed code is fully functional locally.
+
+**Root Cause:** 
+- Health endpoint returns 404 because app **hasn't been deployed yet**, not because of code errors
+- Local testing confirms: `uvicorn main:app` starts successfully, health check returns `{"status":"healthy","version":"1.0.0"}`
+- All imports work: `from risk_scoring import NoShowRiskAgent`, `from intervention_agent import PatientInterventionAgent`
+- The real blocker is Railway authentication, not code issues
+
+**Fix:** 
+- Verified locally with full server test:
+  ```bash
+  cd backend && uvicorn main:app --host 127.0.0.1 --port 8765 &
+  curl http://127.0.0.1:8765/health  # Returns 200 OK
+  pkill -f "uvicorn main:app"
+  ```
+- No code changes needed - deployment only requires Railway auth resolution
+
+**Prevention:** 
+- When troubleshooting deployment issues, always test locally first before assuming code errors
+- Distinguish between "not deployed" (404) vs "deployed but broken" (500/other errors)
+- Cron job error messages should be more specific about what was actually found
+---
+
 <!-- NEW LESSONS GO BELOW THIS LINE -->
