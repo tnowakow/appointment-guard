@@ -58,3 +58,4 @@
 - **Repo:** `tnowakow/appointment-guard`
 - **Branch:** main
 - **Auto-deploy:** Enabled via Railway integration
+# Trigger
