@@ -23,4 +23,4 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway up --detach --project appointment-guard
+          railway up --detach --project appointment-guard --environment production
