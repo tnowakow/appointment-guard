@@ -12,8 +12,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Railway
-        uses: railwayapp/deploy-to-railway@v1.0.2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          project-name: "appointment-guard"
-          token: ${{ secrets.RAILWAY_TOKEN }}
+          node-version: '20'
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Link or Create Project
+        run: |
+          if railway projects list | grep -q "appointment-guard"; then
+            railway link --project appointment-guard
+          else
+            railway init --name appointment-guard
+          fi
+
+      - name: Deploy
+        run: railway up --detach
