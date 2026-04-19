@@ -1,8 +1,8 @@
 # Deployment Status - Appointment Guard Backend
 
-## Current Status: ⚠️ CODE READY - MANUAL RAILWAY SETUP NEEDED
+## Current Status: 🔄 DEPLOYMENT TRIGGERED - AWAITING RAILWAY CONNECTION
 
-**Last Updated:** 2026-04-19 02:23 EDT
+**Last Updated:** 2026-04-19 02:45 EDT
 
 ### Railway Project Details
 - **Project ID:** `fda2073b-d325-4734-8dd6-20deb81eb585`
@@ -11,9 +11,10 @@
 - **Environment:** production
 
 ### Latest Deployment
-- **Status:** Not yet deployed to Railway
+- **Status:** ⏳ Pushed to GitHub at 02:45 EDT - awaiting Railway auto-deploy
 - **Local Test:** ✅ Health endpoint returns 200 OK
-- **Code Status:** All imports fixed, ready for deployment
+- **Code Status:** All imports verified working locally
+- **Last Commit:** `ce89d17` - chore: trigger railway deployment check
 
 ### Fixes Applied (Overnight 2026-04-19)
 1. ✅ Fixed all import paths - changed from `zenticpro.industries.dental` to local imports
@@ -25,8 +26,9 @@
 
 ### Next Steps - Manual Setup Required (5 minutes)
 
-**The code is ready and tested locally.** To deploy:
+**The code is ready and tested locally.** Railway auto-deploy isn't triggering because the GitHub integration needs to be established.
 
+**Option A: Connect via Railway Dashboard (Recommended)**
 1. **Go to Railway:** https://railway.app/new
 2. **Click "Deploy from GitHub repo"**
 3. **Select repository:** `tnowakow/appointment-guard`
@@ -44,6 +46,13 @@
    curl https://appointment-guard-production.up.railway.app/health
    ```
    Expected: `{"status":"healthy","version":"1.0.0"}`
+
+**Option B: Use Existing Project (if already created)**
+If project `fda2073b-d325-4734-8dd6-20deb81eb585` exists but isn't connected:
+1. Go to https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585
+2. Click "Settings" → "GitHub"
+3. Connect the `tnowakow/appointment-guard` repository
+4. Enable auto-deploy on main branch
 
 ### Environment Variables Set
 - ✅ SUPABASE_URL
