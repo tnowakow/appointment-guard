@@ -5,9 +5,8 @@
 name: Deploy to Railway
 
 on:
-  # Disabled - use Railway native GitHub integration
-  # push:
-  #   branches: [ main ]
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
