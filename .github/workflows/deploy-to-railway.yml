@@ -16,11 +16,46 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli@4.30.5
+      - name: Create Railway Project (if not exists)
+        id: create-project
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          # Try to get existing project first
+          PROJECT=$(curl -s -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            "https://api.railway.app/v1/projects?name=appointment-guard" | \
+            jq -r '.[0].id // empty')
+          
+          if [ -z "$PROJECT" ]; then
+            # Create new project from GitHub repo
+            echo "Creating new Railway project..."
+            RESPONSE=$(curl -s -X POST \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "name": "appointment-guard",
+                "description": "Dental no-show prevention AI"
+              }' \
+              "https://api.railway.app/v1/projects")
+            PROJECT=$(echo "$RESPONSE" | jq -r '.id')
+            echo "project_id=$PROJECT" >> $GITHUB_OUTPUT
+            
+            # Add GitHub repo to project
+            curl -s -X POST \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "repo": "https://github.com/tnowakow/appointment-guard",
+                "branch": "main"
+              }' \
+              "https://api.railway.app/v1/projects/$PROJECT/services"
+          else
+            echo "Using existing project: $PROJECT"
+            echo "project_id=$PROJECT" >> $GITHUB_OUTPUT
+          fi
       
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway up --detach --project appointment-guard --environment production
+          railway up --detach
