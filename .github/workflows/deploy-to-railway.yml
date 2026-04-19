@@ -17,12 +17,10 @@ jobs:
           node-version: '20'
       
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
-      
-      - name: Login to Railway
-        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+        run: npm install -g @railway/cli@2.1.7
       
       - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway link --project appointment-guard
-          railway up --detach
+          railway up --detach --project appointment-guard
