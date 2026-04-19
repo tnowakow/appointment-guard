@@ -1,9 +1,4 @@
-# Railway Deployment Workflow
-# Use Railway native GitHub integration instead of this workflow
-# Connect repo at: https://railway.app/new/import
-# Select repository: tnowakow/appointment-guard
-
-name: Deploy to Railway (Manual)
+name: Deploy to Railway
 
 on:
   push:
@@ -17,16 +12,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build and Deploy to Railway (via Docker)
-        run: |
-          echo "This workflow is kept for reference."
-          echo "Railway deployment is now handled via native GitHub integration."
-          echo "To deploy manually, visit: https://railway.app/new/import"
-          echo "Select repository: tnowakow/appointment-guard"
-        continue-on-error: true
-
-      - name: Health Check (will fail until deployed)
-        run: |
-          echo "Checking health endpoint..."
-          curl -s https://appointment-guard-production.up.railway.app/health || \
-          echo "Note: App not yet deployed. Please create Railway project via dashboard."
+      - name: Deploy to Railway
+        uses: railwayapp/deploy-to-railway@v1.0.2
+        with:
+          project-name: "appointment-guard"
+          token: ${{ secrets.RAILWAY_TOKEN }}
