@@ -26,6 +26,7 @@ jobs:
 
       - name: Login to Railway
         run: |
+          mkdir -p ~/.railway
           echo "${{ secrets.RAILWAY_TOKEN }}" > ~/.railway/auth.json
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
