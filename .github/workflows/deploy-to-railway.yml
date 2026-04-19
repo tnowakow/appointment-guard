@@ -3,7 +3,6 @@ name: Deploy to Railway
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   deploy:
@@ -11,44 +10,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli@4.30.5
-      
-      - name: Deploy to Railway
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Notify Deployment
         run: |
-          # Create project and deploy using Railway API via curl
-          echo "Deploying to Railway..."
-          
-          # Create new project
-          PROJECT_RESPONSE=$(curl -s -X POST \
-            -H "Authorization: Bearer $RAILWAY_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"name": "appointment-guard"}' \
-            "https://api.railway.app/v1/projects")
-          
-          echo "Project response: $PROJECT_RESPONSE"
-          
-          PROJECT_ID=$(echo "$PROJECT_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('id', ''))")
-          
-          if [ -z "$PROJECT_ID" ]; then
-            echo "Failed to create project. Response was not valid JSON or missing id field."
-            exit 1
-          fi
-          
-          echo "Created project with ID: $PROJECT_ID"
-          
-          # Add service from GitHub repo
-          curl -s -X POST \
-            -H "Authorization: Bearer $RAILWAY_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"repo": "https://github.com/tnowakow/appointment-guard", "branch": "main"}' \
-            "https://api.railway.app/v1/projects/$PROJECT_ID/services" || true
-          
-          echo "Deployment initiated for project: $PROJECT_ID"
+          echo "🚀 Code pushed to Railway project"
+          echo "Railway will auto-deploy when connected via GitHub integration"
+          echo ""
+          echo "To connect:"
+          echo "1. Go to https://railway.app/new/connect"
+          echo "2. Select repository: tnowakow/appointment-guard"
+          echo "3. Add environment variables in Railway dashboard"
