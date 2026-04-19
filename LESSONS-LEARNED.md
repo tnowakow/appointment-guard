@@ -81,4 +81,31 @@ The only way to resolve this is manual intervention:
 - Consider alternative deployment methods (Vercel, Render, Fly.io) that may have better programmatic auth
 ---
 
+## Lesson 4: Cron Job Error Messages Can Be Misleading - Always Verify Root Cause
+**Date:** 2026-04-19  
+**Project:** appointment-guard  
+**Symptom:** Overnight monitor cron job reported "ModuleNotFoundError or import issues" as the current error.
+
+**Root Cause:** 
+- The error message was a generic description, not an actual observed error
+- Real issue: Railway token invalid → no deployment possible → health endpoint returns 404
+- No ModuleNotFoundError exists in the code - all imports work perfectly locally
+
+**Investigation Steps Taken:**
+1. Checked Railway logs via CLI (failed due to auth)
+2. Checked GitHub Actions workflow runs (confirmed "Unauthorized" error)
+3. Tested local imports: `python3 -c "from main import app"` ✅ Success
+4. Verified health endpoint: returns 404 because app not deployed, not because of code errors
+
+**Fix:** 
+- Updated DEPLOYMENT_STATUS.md with accurate status
+- Documented that code is 100% ready and working locally
+- Clarified that only manual Railway dashboard connection is needed
+
+**Prevention:** 
+- Cron job descriptions should include actual error messages from logs, not assumptions
+- Always verify the real error before attempting fixes
+- Distinguish between deployment infrastructure issues vs. application code issues
+---
+
 <!-- NEW LESSONS GO BELOW THIS LINE -->

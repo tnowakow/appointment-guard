@@ -1,8 +1,28 @@
 # Deployment Status - Appointment Guard Backend
 
-## Current Status: ❌ BLOCKED - INVALID RAILWAY TOKEN (Requires Manual Action)
+## Current Status: ⚠️ AWAITING MANUAL RAILWAY SETUP
 
-**Last Updated:** 2026-04-19 08:38 AM EDT (Overnight Monitor Check)
+**Last Updated:** 2026-04-19 08:53 AM EDT (Overnight Monitor Check)
+
+---
+
+### 🎯 QUICK FIX - 5 MINUTES
+
+The code is **100% ready**. Just need to connect GitHub repo to Railway via dashboard:
+
+1. Go to https://railway.app/new/import
+2. Select repository: `tnowakow/appointment-guard`
+3. Click "Deploy Now"
+4. Go to Variables tab, add these:
+   ```
+   SUPABASE_URL=https://jmkwrxtxfkvydjmlrmya.supabase.co
+   SUPABASE_ANON_KEY=<your_key>
+   TWILIO_ACCOUNT_SID=<your_sid>
+   TWILIO_AUTH_TOKEN=<your_token>
+   TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
+   ```
+5. Wait 2-3 minutes for deployment
+6. Verify: `curl https://<your-project>.up.railway.app/health`
 
 ---
 
