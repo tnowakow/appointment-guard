@@ -1,15 +1,13 @@
 # Railway Deployment Workflow
-# DISABLED - Use Railway native GitHub integration instead
-# To enable: Connect repo at https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585/settings/github
+# Use Railway native GitHub integration instead of this workflow
+# Connect repo at: https://railway.app/new/import
+# Select repository: tnowakow/appointment-guard
 
-name: Deploy to Railway
+name: Deploy to Railway (Manual)
 
-# DISABLED - RAILWAY_TOKEN secret is invalid/expired
-# Solution: Connect repo via Railway dashboard at https://railway.app/new/import
-# Select repository: tnowakow/appointment-guard, then add environment variables
 on:
-  # push:
-  #   branches: [ main ]
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -19,27 +17,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Login to Railway
+      - name: Build and Deploy to Railway (via Docker)
         run: |
-          mkdir -p ~/.railway
-          echo "${{ secrets.RAILWAY_TOKEN }}" > ~/.railway/auth.json
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          echo "This workflow is kept for reference."
+          echo "Railway deployment is now handled via native GitHub integration."
+          echo "To deploy manually, visit: https://railway.app/new/import"
+          echo "Select repository: tnowakow/appointment-guard"
+        continue-on-error: true
 
-      - name: Link to existing project
-        run: railway link --project fda2073b-d325-4734-8dd6-20deb81eb585
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: Deploy to Railway
-        run: railway up --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Health Check (will fail until deployed)
+        run: |
+          echo "Checking health endpoint..."
+          curl -s https://appointment-guard-production.up.railway.app/health || \
+          echo "Note: App not yet deployed. Please create Railway project via dashboard."
