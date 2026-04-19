@@ -1,65 +1,84 @@
-# 🚀 Deployment Action Items - Appointment Guard
+# Deployment Action Items - Appointment Guard Backend
 
-**Status:** Code is ready ✅ | Railway connection needed ⏳
+## Status: ⚠️ AWAITING MANUAL RAILWAY CONNECTION
 
-## What's Done
-- ✅ All import errors fixed (changed from `zenticpro.industries.dental` to local imports)
-- ✅ Health endpoint tested locally: returns `{"status":"healthy","version":"1.0.0"}`
-- ✅ Procfile created for Railway deployment
-- ✅ Code pushed to GitHub: https://github.com/tnowakow/appointment-guard
-
-## What's Needed (5 minutes)
-
-### Step 1: Connect Railway to GitHub
-**Go to:** https://railway.app/new
-
-1. Click **"Deploy from GitHub repo"**
-2. Find and select **`tnowakow/appointment-guard`** repository
-3. Railway will automatically start building (~2-3 minutes)
-
-### Step 2: Add Environment Variables
-Once the service is created, go to the **Variables** tab and add:
-
-```bash
-# Twilio (SMS notifications)
-TWILIO_ACCOUNT_SID=your_twilio_sid_here
-TWILIO_AUTH_TOKEN=your_twilio_token_here
-TWILIO_PHONE_NUMBER=+1234567890
-
-# Supabase (database)
-SUPABASE_URL=https://jmkwrxtxfkvydjmlrmya.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key_here
-
-# Telegram (alerts - optional for now)
-TELEGRAM_BOT_TOKEN=placeholder
-TELEGRAM_CHAT_ID=placeholder
-```
-
-### Step 3: Verify Deployment
-After Railway finishes deploying, test the health endpoint:
-
-```bash
-curl https://appointment-guard-production.up.railway.app/health
-```
-
-**Expected response:**
-```json
-{"status":"healthy","version":"1.0.0"}
-```
-
-## Troubleshooting
-
-### "Application not found" (404)
-This means Railway hasn't deployed yet or the GitHub integration isn't set up. Make sure you've connected the repository in Step 1.
-
-### Import errors in logs
-All import issues have been fixed locally. If you see them, check that:
-- The Procfile exists and contains: `web: uvicorn main:app --host 0.0.0.0 --port $PORT`
-- requirements.txt is present with all dependencies
-
-## Current Blocker
-Railway CLI requires authentication (`railway login`) which needs an interactive browser session. The easiest path is to use the Railway web interface (Step 1 above).
+**Current Time:** 2026-04-19 07:02 EDT (Overnight Monitor)
 
 ---
-**Last Updated:** 2026-04-19 02:45 EDT  
-**Code Status:** Ready for deployment ✅
+
+## What's Done ✅
+
+### Code Fixes Completed
+- [x] Fixed all import paths (local imports instead of zenticpro namespace)
+- [x] Verified `core/__init__.py` and `agents/__init__.py` exist with proper exports
+- [x] Created/updated `Procfile` for Railway deployment
+- [x] Removed conflicting `startCommand` from `railway.toml`
+- [x] Added `.gitignore` to prevent pycache files in repo
+- [x] Enabled GitHub Actions workflow as fallback deployment method
+- [x] Tested locally - all imports work, health endpoint returns 200 OK
+
+### Code Status
+```bash
+# Local test passed:
+python3 -c "from main import app; print('Import successful')"
+# Output: Import successful ✅
+```
+
+---
+
+## What's Needed ❌
+
+### Railway Connection Required (Manual Step)
+
+The GitHub repository `tnowakow/appointment-guard` is **NOT connected** to Railway. This requires manual setup via the Railway dashboard.
+
+#### Quick Fix (5 minutes):
+
+1. **Open Railway Dashboard:** https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585
+
+2. **Connect GitHub Repository:**
+   - Click **Settings** → **GitHub** tab
+   - Click **"Connect a Repository"** or **"Add GitHub App"**
+   - Select: `tnowakow/appointment-guard`
+   - Enable auto-deploy on main branch
+
+3. **Add Environment Variables** (Variables tab):
+   ```bash
+   TWILIO_ACCOUNT_SID=<your_twilio_sid>
+   TWILIO_AUTH_TOKEN=<your_twilio_token>
+   TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
+   SUPABASE_URL=https://jmkwrxtxfkvydjmlrmya.supabase.co
+   SUPABASE_ANON_KEY=<your_supabase_key>
+   ```
+
+4. **Wait for Deployment** (~2-3 minutes)
+
+5. **Verify:**
+   ```bash
+   curl https://appointment-guard-production.up.railway.app/health
+   # Expected: {"status":"healthy","version":"1.0.0"}
+   ```
+
+---
+
+## Alternative: GitHub Actions Deployment
+
+If Railway dashboard connection doesn't work, use GitHub Actions:
+
+1. **Generate Railway Token:** https://railway.app/account/tokens
+
+2. **Add to GitHub Secrets:**
+   - Go to: https://github.com/tnowakow/appointment-guard/settings/secrets/actions
+   - Add new secret: `RAILWAY_TOKEN` = `<your_token>`
+
+3. **Next push** will trigger deployment automatically
+
+---
+
+## Monitoring
+
+This overnight monitor session will continue checking until:
+- ✅ Health endpoint returns 200 OK, OR
+- ✅ Railway connection is established and deployment completes
+
+**Next check:** Will retry health endpoint after any manual intervention or if Railway CLI becomes authenticated.
