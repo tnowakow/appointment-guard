@@ -53,4 +53,32 @@
 - Cron job error messages should be more specific about what was actually found
 ---
 
+## Lesson 3: Railway CLI Login Requires Browser Interaction (Cannot Automate)
+**Date:** 2026-04-19  
+**Project:** appointment-guard  
+**Symptom:** Attempted to fix deployment by running `railway login` but CLI requires browser interaction or valid token.
+
+**Root Cause:** 
+- Railway CLI authentication cannot be done in non-interactive mode
+- `railway login --browserless` fails with "Cannot login in non-interactive mode"
+- Existing RAILWAY_TOKEN is expired/invalid and needs regeneration via web interface
+
+**Fix Attempted:**
+```bash
+railway login  # Prompts for browser open - cannot automate
+railway login --browserless  # Fails: requires interactive mode
+```
+
+**Actual Resolution Path:**
+The only way to resolve this is manual intervention:
+1. Tom must access https://railway.app/login via browser
+2. Either regenerate token at https://railway.app/account/security OR connect GitHub repo directly in project settings
+3. Once connected, Railway auto-deploys from main branch
+
+**Prevention:** 
+- For future deployments, prefer Railway's native GitHub integration over CLI tokens (more stable)
+- If using tokens, document expiration and set reminder to refresh before deployment deadlines
+- Consider alternative deployment methods (Vercel, Render, Fly.io) that may have better programmatic auth
+---
+
 <!-- NEW LESSONS GO BELOW THIS LINE -->

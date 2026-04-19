@@ -2,7 +2,29 @@
 
 ## Current Status: ❌ BLOCKED - INVALID RAILWAY TOKEN (Requires Manual Action)
 
-**Last Updated:** 2026-04-19 08:08 AM EDT (Overnight Monitor Check)
+**Last Updated:** 2026-04-19 08:38 AM EDT (Overnight Monitor Check)
+
+---
+
+### 🚨 ACTION REQUIRED FOR TOM
+
+The Railway deployment is blocked because the `RAILWAY_TOKEN` stored in GitHub secrets and/or environment variables is **expired or invalid**. This cannot be fixed automatically - you need to access the Railway dashboard.
+
+**Quick Fix (5 minutes):**
+1. Go to: https://railway.app/login
+2. Navigate to project: `appointment-guard` OR create new project
+3. In Settings → GitHub, click "Connect a Repository"
+4. Select: `tnowakow/appointment-guard`
+5. Go to Variables tab and add these environment variables:
+   ```
+   SUPABASE_URL=https://jmkwrxtxfkvydjmlrmya.supabase.co
+   SUPABASE_ANON_KEY=<your_supabase_key>
+   TWILIO_ACCOUNT_SID=<your_twilio_sid>
+   TWILIO_AUTH_TOKEN=<your_twilio_token>
+   TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
+   ```
+6. Railway will auto-deploy within 2-3 minutes
+7. Verify: `curl https://appointment-guard-production.up.railway.app/health`
 
 ---
 
