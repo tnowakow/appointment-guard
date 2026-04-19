@@ -4,12 +4,12 @@
 
 name: Deploy to Railway
 
-# TEMPORARILY ENABLED FOR TESTING - RAILWAY_TOKEN may be invalid
-# If this fails, connect repo via Railway dashboard instead:
-# https://railway.app/new/import (select tnowakow/appointment-guard)
+# DISABLED - RAILWAY_TOKEN secret is invalid/expired
+# Solution: Connect repo via Railway dashboard at https://railway.app/new/import
+# Select repository: tnowakow/appointment-guard, then add environment variables
 on:
-  push:
-    branches: [ main ]
+  # push:
+  #   branches: [ main ]
   workflow_dispatch:
 
 jobs:
