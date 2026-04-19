@@ -175,3 +175,44 @@ Create a new deployment via Railway dashboard:
 
 **Resolution Path:**
 Tom needs to manually create Railway project via https://railway.app/new/import during waking hours. Once deployed, automated monitoring can resume.
+---
+
+<!-- NEW LESSONS GO BELOW THIS LINE -->
+
+## Lesson 7: Overnight Monitor Investigation - Auth Barrier Confirmed (07:38 AM)
+**Date:** 2026-04-19 (7:38 AM EDT)
+**Project:** appointment-guard
+**Symptom:** Health endpoint returns 404, cron job instructed to fix "ModuleNotFoundError or import issues"
+
+**Root Cause:**
+The error message was misleading. Actual investigation revealed:
+- Code is 100% functional locally: `python3 -c "from main import app"` succeeds
+- All imports work correctly (risk_scoring, intervention_agent, core.utils, etc.)
+- Health endpoint returns 404 because **no deployment exists on Railway**
+- GitHub Actions RAILWAY_TOKEN secret is invalid/expired (confirmed via workflow logs)
+- Railway CLI has no valid credentials locally (`~/.railway/config.json` shows all tokens null)
+- Browser automation tools not available (playwright, puppeteer, selenium all missing)
+
+**Investigation Steps:**
+1. ✅ Checked local imports - all work perfectly
+2. ✅ Verified Procfile, pyproject.toml, requirements.txt - all correct
+3. ✅ Tested Railway health endpoint - returns 404 (no deployment)
+4. ✅ Checked GitHub Actions logs - confirmed "Unauthorized" error with invalid token
+5. ✅ Attempted Railway CLI login - fails in non-interactive mode
+6. ✅ Searched for credentials - none found locally or in keychain
+7. ✅ Checked for browser automation - not available
+8. ❌ Cannot proceed without manual browser-based authentication
+
+**Fix:**
+- Updated DEPLOYMENT_STATUS.md with comprehensive investigation findings
+- Documented two resolution options (manual dashboard deploy vs. update GitHub secret)
+- Committed and pushed status update to GitHub
+- Added this lesson learned entry
+
+**Prevention:**
+- Future overnight monitors should check authentication status first before assuming code errors
+- Distinguish between: 404 (not deployed) vs 500 (deployed but broken) vs import errors
+- If browser-based auth is required, flag as "requires manual intervention" immediately
+- Consider setting up deployment during business hours when browser interaction is possible
+
+**Status:** Awaiting Tom's manual Railway project creation via https://railway.app/new/import
