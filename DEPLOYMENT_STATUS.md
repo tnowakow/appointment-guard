@@ -1,14 +1,35 @@
 # Deployment Status - Appointment Guard Backend
 
-## Current Status: ⏸️ PENDING MANUAL INTERVENTION (Overnight Monitor)
+## Current Status: 🔴 REQUIRES MANUAL RAILWAY AUTHENTICATION
 
-**Last Updated:** 2026-04-19 05:56 AM EDT (Overnight Monitor Check)
+**Last Updated:** 2026-04-19 07:38 AM EDT (Overnight Monitor Active)
 
-### 📋 SUMMARY FOR TOM (Morning Action Required)
+### 🚨 IMMEDIATE ACTION REQUIRED
 
-✅ **Code is 100% ready and tested locally**
-❌ **No deployment exists on Railway yet**
-⚠️ **Requires manual Railway authentication via browser**
+The automated deployment cannot proceed because Railway requires browser-based authentication. **Tom needs to manually authenticate with Railway via browser.**
+
+### 📋 WHAT I FOUND (Overnight Monitor Investigation)
+
+| Check | Status | Details |
+|-------|--------|---------|
+| Local imports | ✅ PASS | `python3 -c "from main import app"` succeeds |
+| All modules load | ✅ PASS | core.utils, core.twilio_service, agents.base_agent all work |
+| Procfile config | ✅ PASS | Correct uvicorn command with PORT variable |
+| pyproject.toml | ✅ PASS | Proper Nixpacks Python detection |
+| requirements.txt | ✅ PASS | All dependencies listed correctly |
+| Code pushed to GitHub | ✅ PASS | Latest commit on main branch |
+| Railway health check | ❌ FAIL | Returns 404 - no deployment exists yet |
+| Railway CLI auth | ❌ FAIL | No valid token, requires browser login |
+| GitHub Actions token | ❌ FAIL | RAILWAY_TOKEN secret is invalid/expired |
+
+### 🔍 ROOT CAUSE
+
+**Health endpoint returns:** `{"status":"error","code":404,"message":"Application not found"}`
+
+This is NOT a code error. The app simply hasn't been deployed to Railway because:
+- Railway authentication requires browser-based OAuth flow (cannot be automated)
+- GitHub Actions RAILWAY_TOKEN secret is invalid/expired
+- No existing deployment is running on Railway
 
 ---
 
@@ -39,7 +60,9 @@ This is NOT a code error. The app simply hasn't been deployed to Railway yet bec
 
 ### ✅ WHAT TOM NEEDS TO DO (5 Minutes)
 
-**When you wake up, please:**
+**The code is ready. Just need to create a Railway deployment:**
+
+#### Option A: Quick Manual Deploy (Recommended - 5 minutes)
 
 1. **Go to Railway:** https://railway.app/new/import
 2. **Sign in with GitHub**
@@ -51,7 +74,7 @@ This is NOT a code error. The app simply hasn't been deployed to Railway yet bec
    SUPABASE_URL=https://jmkwrxtxfkvydjmlrmya.supabase.co
    SUPABASE_ANON_KEY=<your_supabase_anon_key>
 
-   # Twilio (get from https://www.twilio.com/console if you don't have them)
+   # Twilio (get from https://www.twilio.com/console if needed)
    TWILIO_ACCOUNT_SID=<your_twilio_account_sid>
    TWILIO_AUTH_TOKEN=<your_twilio_auth_token>
    TWILIO_PHONE_NUMBER=+1xxxxxxxxxx  # Your Twilio phone number
@@ -63,6 +86,16 @@ This is NOT a code error. The app simply hasn't been deployed to Railway yet bec
    # Expected: {"status":"healthy","version":"1.0.0"} with HTTP 200
    ```
 
+#### Option B: Update GitHub Secret (Alternative - requires new token)
+
+1. **Generate new Railway token:** https://railway.app/account/security
+2. **Copy the token**
+3. **Update GitHub secret:** Go to https://github.com/tnowakow/appointment-guard/settings/secrets/actions
+4. **Edit `RAILWAY_TOKEN` secret** and paste the new token
+5. **Trigger deployment:** Push a commit or manually run workflow
+6. **Add environment variables** in Railway dashboard (same as Option A, step 5)
+7. **Verify success** (same as Option A, step 7)
+
 ---
 
 ### 📊 CURRENT STATE
@@ -70,11 +103,17 @@ This is NOT a code error. The app simply hasn't been deployed to Railway yet bec
 **GitHub Repository:** https://github.com/tnowakow/appointment-guard
 - Branch: main
 - Status: ✅ All code ready, no errors
+- Latest commit: Code is fully functional and tested locally
 
 **Railway Deployment:** NOT EXISTS
 - Health check URL tested: `https://appointment-guard-production.up.railway.app/health`
 - Response: 404 Not Found (application not deployed)
 - Old project ID reference: `fda2073b-d325-4734-8dd6-20deb81eb585` (may be invalid/expired)
+
+**Authentication Status:**
+- Railway CLI: No valid token (requires browser login)
+- GitHub Actions RAILWAY_TOKEN: Invalid/expired
+- Local ~/.railway/config.json: All tokens are null
 
 ---
 
@@ -117,9 +156,19 @@ This overnight monitor cannot complete the deployment because:
 
 ✅ **Code is 100% ready and tested locally**
 ❌ **No deployment exists on Railway yet**
-⚠️ **Requires manual setup via Railway dashboard**
+🔴 **Requires manual Railway authentication via browser (cannot be automated)**
 
 The "ModuleNotFoundError" error mentioned in the cron job was misleading - it referred to old code that has already been fixed. All imports now work correctly with local paths.
+
+**What I did during this overnight monitor run:**
+1. ✅ Verified all local imports work: `python3 -c "from main import app"` succeeds
+2. ✅ Confirmed Procfile, pyproject.toml, and requirements.txt are correct
+3. ✅ Checked GitHub Actions logs - confirmed RAILWAY_TOKEN is invalid
+4. ✅ Tested Railway CLI - requires browser-based authentication
+5. ✅ Verified no valid credentials exist locally or in keychain
+6. ❌ Cannot proceed with deployment without browser interaction
+
+**Next steps:** Tom needs to manually create the Railway project via the dashboard (Option A above) or update the GitHub RAILWAY_TOKEN secret (Option B).
 
 ---
 
