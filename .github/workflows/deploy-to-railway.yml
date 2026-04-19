@@ -1,8 +1,8 @@
-# Note: This workflow is disabled. Railway auto-deploys via GitHub integration.
-# The project is connected at https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585
-# All pushes to main branch automatically trigger deployments through Railway's native integration.
+# Railway Deployment Workflow
+# Uses Railway CLI to deploy from GitHub Actions
+# Requires RAILWAY_TOKEN secret in repository settings
 
-name: Deploy to Railway (Disabled - Using Native Integration)
+name: Deploy to Railway
 
 on:
   push:
@@ -10,11 +10,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  notify:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify Deployment Status
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy to Railway
         run: |
-          echo "✅ Code pushed to GitHub"
-          echo "🚀 Railway will auto-deploy via native GitHub integration"
-          echo "📝 Check deployment status at: https://railway.app/project/fda2073b-d325-4734-8dd6-20deb81eb585"
+          railway up --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
