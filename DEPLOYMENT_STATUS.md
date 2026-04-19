@@ -1,8 +1,115 @@
 # Deployment Status - Appointment Guard Backend
 
-## Current Status: ⚠️ CODE READY, NEEDS MANUAL RAILWAY SETUP
+## Current Status: ⏸️ PENDING MANUAL INTERVENTION (Overnight Monitor)
 
-**Last Updated:** 2026-04-19 09:15 AM EDT (Overnight Monitor Check)
+**Last Updated:** 2026-04-19 05:56 AM EDT (Overnight Monitor Check)
+
+### 📋 SUMMARY FOR TOM (Morning Action Required)
+
+✅ **Code is 100% ready and tested locally**
+❌ **No deployment exists on Railway yet**
+⚠️ **Requires manual Railway authentication via browser**
+
+---
+
+### 🔍 WHAT THE OVERNIGHT MONITOR FOUND
+
+| Check | Status | Details |
+|-------|--------|---------|
+| Local imports | ✅ PASS | `python3 -c "from main import app"` succeeds |
+| All modules load | ✅ PASS | core.utils, core.twilio_service, agents.base_agent all work |
+| Procfile config | ✅ PASS | Correct uvicorn command with PORT variable |
+| pyproject.toml | ✅ PASS | Proper Nixpacks Python detection |
+| requirements.txt | ✅ PASS | All dependencies listed correctly |
+| Code pushed to GitHub | ✅ PASS | Latest commit on main branch |
+| Railway health check | ❌ FAIL | Returns 404 - no deployment exists yet |
+
+---
+
+### 🚧 ROOT CAUSE
+
+**Health endpoint returns:** `{"status":"error","code":404,"message":"Application not found"}`
+
+This is NOT a code error. The app simply hasn't been deployed to Railway yet because:
+- Railway authentication token in GitHub Actions secret (`RAILWAY_TOKEN`) is invalid/expired
+- Railway CLI requires browser-based login which cannot be automated overnight
+- No existing deployment is running on Railway
+
+---
+
+### ✅ WHAT TOM NEEDS TO DO (5 Minutes)
+
+**When you wake up, please:**
+
+1. **Go to Railway:** https://railway.app/new/import
+2. **Sign in with GitHub**
+3. **Select repository:** `tnowakow/appointment-guard`
+4. **Click "Deploy Now"**
+5. **Add environment variables** in Railway dashboard → Variables tab:
+   ```bash
+   # Supabase (you have these)
+   SUPABASE_URL=https://jmkwrxtxfkvydjmlrmya.supabase.co
+   SUPABASE_ANON_KEY=<your_supabase_anon_key>
+
+   # Twilio (get from https://www.twilio.com/console if you don't have them)
+   TWILIO_ACCOUNT_SID=<your_twilio_account_sid>
+   TWILIO_AUTH_TOKEN=<your_twilio_auth_token>
+   TWILIO_PHONE_NUMBER=+1xxxxxxxxxx  # Your Twilio phone number
+   ```
+6. **Wait 2-3 minutes** for auto-deployment
+7. **Verify success:**
+   ```bash
+   curl https://<your-project-name>.up.railway.app/health
+   # Expected: {"status":"healthy","version":"1.0.0"} with HTTP 200
+   ```
+
+---
+
+### 📊 CURRENT STATE
+
+**GitHub Repository:** https://github.com/tnowakow/appointment-guard
+- Branch: main
+- Status: ✅ All code ready, no errors
+
+**Railway Deployment:** NOT EXISTS
+- Health check URL tested: `https://appointment-guard-production.up.railway.app/health`
+- Response: 404 Not Found (application not deployed)
+- Old project ID reference: `fda2073b-d325-4734-8dd6-20deb81eb585` (may be invalid/expired)
+
+---
+
+### 🛠️ WHAT'S ALREADY BEEN FIXED
+
+Previous issues resolved in recent commits:
+1. ✅ Changed all imports from `zenticpro.*` to local paths (`core.*`, `agents.*`)
+2. ✅ Added Procfile for uvicorn deployment
+3. ✅ Added pyproject.toml for Nixpacks Python detection
+4. ✅ Updated requirements.txt with correct dependencies
+5. ✅ All code pushed to GitHub
+6. ✅ Local testing confirms everything works: `uvicorn main:app` starts successfully
+
+---
+
+### 🎯 SUCCESS CRITERIA
+
+Deployment is complete when:
+```bash
+curl https://<project-name>.up.railway.app/health
+# Returns HTTP 200 with body: {"status":"healthy","version":"1.0.0"}
+```
+
+**Current Status:** NOT MET - requires manual Railway project creation via browser
+
+---
+
+### 📝 WHY AUTOMATED FIX FAILED
+
+This overnight monitor cannot complete the deployment because:
+- Railway API requires valid authentication token (current token is invalid/expired)
+- Creating a new project requires browser-based GitHub OAuth flow
+- `railway login` CLI command fails in non-interactive mode: "Cannot login in non-interactive mode"
+
+**Next overnight monitor run:** Will re-check health endpoint after manual deployment is complete
 
 ---
 
