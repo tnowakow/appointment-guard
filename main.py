@@ -6,9 +6,10 @@ FastAPI application for dental no-show prevention using ZenticPro platform.
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, validator
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 import os
+import httpx
 
 from risk_scoring import NoShowRiskAgent
 from intervention_agent import PatientInterventionAgent
@@ -194,6 +195,111 @@ async def score_batch(appointments: List[Appointment]):
             })
     
     return {"scored": len(results), "results": results}
+
+
+@app.get("/appointments")
+async def get_appointments(days_ahead: int = 7):
+    """
+    Get upcoming appointments from Supabase with risk scores.
+    
+    Args:
+        days_ahead: Number of days to look ahead (default: 7)
+    """
+    try:
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_ANON_KEY")
+        
+        if not supabase_url or not supabase_key:
+            raise HTTPException(status_code=500, detail="Supabase credentials not configured")
+        
+        # Calculate date range
+        today = datetime.now().date()
+        end_date = today + timedelta(days=days_ahead)
+        
+        # Fetch appointments from Supabase
+        async with httpx.AsyncClient() as client:
+            url = f"{supabase_url}/rest/v1/appointments"
+            headers = {
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "count=exact"
+            }
+            
+            # Build query: upcoming appointments, joined with patient and provider data
+            query_params = {
+                "select": "*,patients(patient_name,patient_phone),providers(provider_name)",
+                "appointment_date.gte": today.isoformat(),
+                "appointment_date.lte": end_date.isoformat(),
+                "status.not.in.": "(completed,cancelled)",
+                "order": "appointment_date.asc,appointment_time.asc"
+            }
+            
+            response = await client.get(url, headers=headers, params=query_params)
+            response.raise_for_status()
+            data = response.json()
+        
+        # Process appointments and calculate risk scores
+        appointments = []
+        for row in data:
+            appointment_data = {
+                "patient_id": str(row["id"]),
+                "patient_name": row["patients"]["patient_name"] if row["patients"] else "Unknown",
+                "patient_phone": row["patients"]["patient_phone"] if row["patients"] else "+10000000000",
+                "appointment_date": row["appointment_date"],
+                "appointment_time": str(row["appointment_time"]).split(".")[0][:8],  # Format: HH:MM:SS
+                "provider_name": row["providers"]["provider_name"] if row["providers"] else "Unknown",
+                "late_arrival_count": row.get("late_arrival_count", 0) or 0,
+                "cancellation_count": row.get("cancellation_count", 0) or 0,
+                "is_first_visit": row.get("is_first_visit", False) or False,
+                "days_until_appointment": (datetime.strptime(row["appointment_date"], "%Y-%m-%d").date() - today).days
+            }
+            
+            # Calculate risk score using existing agent
+            try:
+                risk_agent = NoShowRiskAgent()
+                item = {
+                    "late_arrival_count": appointment_data["late_arrival_count"],
+                    "cancellation_count": appointment_data["cancellation_count"],
+                    "is_first_visit": appointment_data["is_first_visit"],
+                    "appointment_day": datetime.strptime(row["appointment_date"], "%Y-%m-%d").strftime("%A").lower(),
+                    "appointment_hour": int(str(row["appointment_time"]).split(":")[0]),
+                    "days_until_appointment": appointment_data["days_until_appointment"]
+                }
+                
+                result = await risk_agent.execute(item)
+                risk_score = result.result.get("prediction", 0.5)
+                risk_category = risk_agent.get_risk_category(risk_score)
+                
+                # Determine recommendation
+                if risk_category == "HIGH":
+                    recommendation = "Send confirmation SMS + call if no response"
+                elif risk_category == "MEDIUM":
+                    recommendation = "Send reminder SMS 24 hours before"
+                else:
+                    recommendation = "Standard reminder only"
+                
+                appointments.append({
+                    **appointment_data,
+                    "risk_score": round(risk_score, 2),
+                    "risk_category": risk_category,
+                    "recommendation": recommendation
+                })
+            except Exception as e:
+                # If risk scoring fails, add appointment with default values
+                appointments.append({
+                    **appointment_data,
+                    "risk_score": 0.5,
+                    "risk_category": "MEDIUM",
+                    "recommendation": "Standard reminder only"
+                })
+        
+        return {
+            "count": len(appointments),
+            "appointments": appointments
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/health")
