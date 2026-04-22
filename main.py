@@ -127,9 +127,10 @@ async def get_appointments():
     try:
         # Fetch upcoming appointments from Supabase using official client
         today = datetime.now().date()
-
+        
         print(f"🔍 Fetching appointments from Supabase for {today}+")
-
+        print(f"Supabase URL: {SUPABASE_URL}")
+        
         # Query appointments with joins for patient and provider data
         result = (
             supabase.table("appointments")
@@ -143,10 +144,12 @@ async def get_appointments():
             .order("appointment_time")
             .execute()
         )
-
+        
         appointments_data = result.data
         print(f"✅ Got {len(appointments_data)} appointments from Supabase")
-
+        if appointments_data:
+            print(f"First appointment: {appointments_data[0]}")
+        
         if not appointments_data:
             print("⚠️ No appointments found, returning mock data")
             return {"appointments": _get_mock_appointments()}
