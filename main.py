@@ -394,7 +394,8 @@ async def health_check():
 async def test_supabase_connection():
     """Debug endpoint to test Supabase connection directly."""
     supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_ANON_KEY")
+    # Use service role key for backend (bypasses RLS)
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", os.getenv("SUPABASE_ANON_KEY"))
     
     result = {
         "has_url": bool(supabase_url),
@@ -405,6 +406,7 @@ async def test_supabase_connection():
     
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            # Try simple query first - just get all appointments
             url = f"{supabase_url}/rest/v1/appointments"
             headers = {
                 "apikey": supabase_key,
@@ -412,12 +414,14 @@ async def test_supabase_connection():
                 "Prefer": "count=exact"
             }
             params = {
-                "select": "id,patient_id,appointment_date,patients(patient_name)",
-                # Removed limit to see all data
+                "select": "*"
             }
             
             response = await client.get(url, headers=headers, params=params)
             result["status_code"] = response.status_code
+            raw_response = response.text[:500]
+            result["raw_response"] = raw_response
+            
             if response.status_code == 200:
                 data = response.json()  # REST API returns list directly
                 result["success"] = True
@@ -425,7 +429,7 @@ async def test_supabase_connection():
                 result["sample_data"] = data[:1] if isinstance(data, list) else [data]
             else:
                 result["success"] = False
-                result["error"] = response.text[:200]
+                result["error"] = raw_response
     except Exception as e:
         result["success"] = False
         result["error"] = str(e)
