@@ -131,12 +131,24 @@ async def get_appointments():
         print(f"🔍 Fetching appointments from Supabase for {today}+")
         print(f"Supabase URL: {SUPABASE_URL}")
 
-        # First, try simple query without joins
-        result = supabase.table("appointments").select("*").limit(10).execute()
+        # Query with foreign key joins to get patient and provider names
+        result = (
+            supabase.table("appointments")
+            .select(
+                "id,appointment_date,appointment_time,status,"
+                "late_arrival_count,cancellation_count,is_first_visit,"
+                "patients!inner(patient_name),"  # Join with patients table
+                "providers!inner(provider_name)"   # Join with providers table
+            )
+            .not_("status", "in", "(completed,cancelled)")
+            .order("appointment_date")
+            .order("appointment_time")
+            .limit(50)
+            .execute()
+        )
         appointments_data = result.data
-        print(f"✅ Got {len(appointments_data)} raw appointments from Supabase")
+        print(f"✅ Got {len(appointments_data)} appointments from Supabase with joins")
         if appointments_data:
-            print(f"First appointment keys: {list(appointments_data[0].keys())}")
             print(f"First appointment: {appointments_data[0]}")
 
         if not appointments_data:
@@ -153,13 +165,22 @@ async def get_appointments():
     try:
         appointments = []
         for row in appointments_data:
+            # Extract nested patient/provider data from Supabase join result
+            patients_obj = row.get("patients", {})
+            providers_obj = row.get("providers", {})
+            
+            patient_name = ("Unknown" if not isinstance(patients_obj, dict) else 
+                          patients_obj.get("patient_name", "Unknown") or "Unknown")
+            provider_name = ("Unknown" if not isinstance(providers_obj, dict) else 
+                           providers_obj.get("provider_name", "Unknown") or "Unknown")
+            
             appointment_data = {
                 "patient_id": str(row.get("id", "")),
-                "patient_name": row.get("patient_name", "Unknown") or "Unknown",
+                "patient_name": patient_name,
                 "patient_phone": "+10000000000",
                 "appointment_date": str(row.get("appointment_date", "")),
                 "appointment_time": str(row.get("appointment_time", "")).split(".")[0][:8] if row.get("appointment_time") else "00:00:00",
-                "provider_name": row.get("provider_name", "Unknown") or "Unknown",
+                "provider_name": provider_name,
                 "late_arrival_count": int(row.get("late_arrival_count", 0) or 0),
                 "cancellation_count": int(row.get("cancellation_count", 0) or 0),
                 "is_first_visit": bool(row.get("is_first_visit", False)),
