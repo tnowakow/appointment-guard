@@ -166,9 +166,24 @@ async def get_appointments():
                 "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
             }
             
-            # Calculate risk score using ZenticPro agent (synchronous version)
-            risk_agent = NoShowRiskAgent()
-            risk_score = risk_agent.predict(appointment_data)  # Returns float 0-1
+            # Simple synchronous risk calculation (no async agent needed)
+            has_late_history = appointment_data["late_arrival_count"] > 2
+            has_cancel_history = appointment_data["cancellation_count"] > 1
+            is_first_time = appointment_data["is_first_visit"]
+            days_until = appointment_data["days_until_appointment"]
+            
+            # Calculate risk score (0-1)
+            risk_score = 0.25  # Base risk
+            if has_late_history:
+                risk_score += 0.3
+            if has_cancel_history:
+                risk_score += 0.4
+            if is_first_time:
+                risk_score += 0.2
+            if days_until <= 1:  # Last-minute booking
+                risk_score += 0.15
+            
+            risk_score = min(risk_score, 1.0)  # Cap at 1.0
             
             # Convert to category and recommendation
             if risk_score >= 0.7:
