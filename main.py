@@ -151,7 +151,9 @@ async def get_appointments():
         appointments_data = result.data
         print(f"✅ Got {len(appointments_data)} appointments from Supabase")
         if appointments_data:
-            print(f"First appointment: {appointments_data[0]}")
+            first_appointment = appointments_data[0]
+            print(f"First appointment keys: {list(first_appointment.keys())}")
+            print(f"First appointment: {first_appointment}")
         
         if not appointments_data:
             print("⚠️ No appointments found, returning mock data")
