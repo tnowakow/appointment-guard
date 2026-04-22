@@ -283,25 +283,36 @@ async def get_appointments(days_ahead: int = 7):
         today = datetime.now().date()
         end_date = today + timedelta(days=days_ahead)
         
-        # Fetch appointments from Supabase using the secure function
+        # Fetch appointments from Supabase using REST API with embedded joins
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                # Call the get_public_appointments() RPC function
-                url = f"{supabase_url}/rpc/get_public_appointments"
+                # Use REST API with embedded selects (more reliable than RPC)
+                url = f"{supabase_url}/rest/v1/appointments"
                 headers = {
-                    "apikey": supabase_key,  # Supabase uses 'apikey' header, not 'Authorization'
-                    "Content-Type": "application/json"
+                    "apikey": supabase_key,
+                    "Content-Type": "application/json",
+                    "Prefer": "count=exact"
                 }
                 
-                print(f"🔍 Calling Supabase RPC: {url}")
+                # Build query with embedded joins for patient and provider data
+                params = {
+                    "select": "id,patient_id,provider_id,appointment_date,appointment_time,status,patients(patient_name),providers(provider_name)",
+                    "appointment_date.gte": today.isoformat(),
+                    "status.not.in.": "(completed,cancelled)",
+                    "order": "appointment_date.asc,appointment_time.asc"
+                }
+                
+                print(f"🔍 Calling Supabase REST: {url}")
                 print(f"🔑 Using key (first 20 chars): {supabase_key[:20]}...")
-                response = await client.get(url, headers=headers)
+                response = await client.get(url, headers=headers, params=params)
                 print(f"📊 Response status: {response.status_code}")
                 if response.status_code != 200:
                     print(f"❌ Error response: {response.text[:500]}")
                 
                 response.raise_for_status()
-                appointments_data = response.json()
+                result = response.json()
+                appointments_data = result.get("data", [])
+                count = int(result.get("count", len(appointments_data)))
                 print(f"✅ Got {len(appointments_data)} appointments from Supabase")
         except httpx.HTTPError as e:
             print(f"⚠️ HTTP error: {e}")
@@ -317,12 +328,12 @@ async def get_appointments(days_ahead: int = 7):
         for row in appointments_data:
             appointment_data = {
                 "patient_id": str(row.get("id", "")),
-                "patient_name": row.get("patient_name", "Unknown"),
-                "patient_phone": "+10000000000",  # Not exposed by secure function
+                "patient_name": row.get("patients", {}).get("patient_name", "Unknown") if row.get("patients") else "Unknown",
+                "patient_phone": "+10000000000",  # Not exposed by secure query
                 "appointment_date": row.get("appointment_date", ""),
                 "appointment_time": str(row.get("appointment_time", "00:00:00")).split(".")[0][:8],
-                "provider_name": row.get("provider_name", "Unknown"),
-                "late_arrival_count": 0,  # Not available from public function
+                "provider_name": row.get("providers", {}).get("provider_name", "Unknown") if row.get("providers") else "Unknown",
+                "late_arrival_count": 0,  # Not available from public query
                 "cancellation_count": 0,
                 "is_first_visit": False,
                 "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
