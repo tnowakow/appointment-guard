@@ -271,8 +271,8 @@ async def get_appointments(days_ahead: int = 7):
     """
     try:
         supabase_url = os.getenv("SUPABASE_URL")
-        # Use anon key for the public function (it's designed for this)
-        supabase_key = os.getenv("SUPABASE_ANON_KEY")
+        # Use service role key for backend (bypasses RLS)
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", os.getenv("SUPABASE_ANON_KEY"))
         
         if not supabase_url or not supabase_key:
             print(f"⚠️ Supabase credentials missing: URL={bool(supabase_url)}, Key={bool(supabase_key)}")
