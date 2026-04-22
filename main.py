@@ -155,20 +155,31 @@ async def get_appointments():
         for row in appointments_data:
             appointment_data = {
                 "patient_id": str(row.get("id", "")),
-                "patient_name": row.get("patient_name", "Unknown") or "Unknown",  # Direct from flat data
-                "patient_phone": "+10000000000",  # Not exposed by secure query
+                "patient_name": row.get("patient_name", "Unknown") or "Unknown",
+                "patient_phone": "+10000000000",
                 "appointment_date": str(row.get("appointment_date", "")),
                 "appointment_time": str(row.get("appointment_time", "")).split(".")[0][:8] if row.get("appointment_time") else "00:00:00",
-                "provider_name": row.get("provider_name", "Unknown") or "Unknown",  # Direct from flat data
+                "provider_name": row.get("provider_name", "Unknown") or "Unknown",
                 "late_arrival_count": int(row.get("late_arrival_count", 0) or 0),
                 "cancellation_count": int(row.get("cancellation_count", 0) or 0),
                 "is_first_visit": bool(row.get("is_first_visit", False)),
                 "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
             }
             
-            # Calculate risk score using ZenticPro agent
+            # Calculate risk score using ZenticPro agent (synchronous version)
             risk_agent = NoShowRiskAgent()
-            risk_result = risk_agent.evaluate_risk(appointment_data)
+            risk_score = risk_agent.predict(appointment_data)  # Returns float 0-1
+            
+            # Convert to category and recommendation
+            if risk_score >= 0.7:
+                risk_category = "HIGH"
+                recommendation = "Send confirmation SMS + call if no response"
+            elif risk_score >= 0.4:
+                risk_category = "MEDIUM"
+                recommendation = "Send reminder SMS 48 hours before"
+            else:
+                risk_category = "LOW"
+                recommendation = "Standard reminder 24 hours before"
             
             appointment = Appointment(
                 patient_id=appointment_data["patient_id"],
@@ -177,9 +188,9 @@ async def get_appointments():
                 appointment_date=appointment_data["appointment_date"],
                 appointment_time=appointment_data["appointment_time"],
                 provider_name=appointment_data["provider_name"],
-                risk_score=risk_result["risk_score"],
-                risk_category=risk_result["risk_category"],
-                recommendation=risk_result["recommendation"]
+                risk_score=risk_score,
+                risk_category=risk_category,
+                recommendation=recommendation
             )
             
             appointments.append(appointment)
