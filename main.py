@@ -293,9 +293,15 @@ async def get_appointments(days_ahead: int = 7):
                     "Content-Type": "application/json"
                 }
                 
+                print(f"🔍 Calling Supabase RPC: {url}")
                 response = await client.get(url, headers=headers)
+                print(f"📊 Response status: {response.status_code}")
+                if response.status_code != 200:
+                    print(f"❌ Error response: {response.text[:200]}")
+                
                 response.raise_for_status()
                 appointments_data = response.json()
+                print(f"✅ Got {len(appointments_data)} appointments from Supabase")
         except Exception as supabase_error:
             print(f"⚠️ Supabase connection failed: {supabase_error}")
             return _get_mock_appointments()
