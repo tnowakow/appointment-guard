@@ -51,12 +51,12 @@ class Appointment(BaseModel):
     appointment_time: str
     provider_name: Optional[str] = "Smith"
     office_address: Optional[str] = ""
-    
+
     # Historical data (from database)
     late_arrival_count: int = 0
     cancellation_count: int = 0
     is_first_visit: bool = False
-    
+
     # Computed fields
     risk_score: float = Field(ge=0, le=1)
     risk_category: str
@@ -66,9 +66,9 @@ class Appointment(BaseModel):
 def _get_mock_appointments() -> List[Appointment]:
     """Return mock appointments for development when Supabase is unavailable."""
     from datetime import date, timedelta
-    
+
     today = date.today()
-    
+
     return [
         Appointment(
             patient_id="1",
@@ -123,60 +123,60 @@ async def get_appointments():
     if not supabase:
         print("⚠️ Supabase client not initialized (missing credentials)")
         return {"appointments": _get_mock_appointments()}
-    
+
     try:
         # Fetch upcoming appointments from Supabase using official client
         today = datetime.now().date()
-        
+
         print(f"🔍 Fetching appointments from Supabase for {today}+")
-        
+
         # Query appointments with joins for patient and provider data
         result = (
             supabase.table("appointments")
             .select(
-                "id,patient_id,provider_id,appointment_date,appointment_time,status,"
-                "patients!inner(patient_name),providers!inner(provider_name)"
+                "id,patient_id,provider_id,appointment_date,appointment_time,status," 
+                "patients(patient_name),providers(provider_name)"
             )
-            .gte("appointment_date", today.isoformat())
+            # Removed date filter temporarily to see all data
             .not_("status", "in", "(completed,cancelled)")
             .order("appointment_date")
             .order("appointment_time")
             .execute()
         )
-        
+
         appointments_data = result.data
         print(f"✅ Got {len(appointments_data)} appointments from Supabase")
-        
+
         if not appointments_data:
             print("⚠️ No appointments found, returning mock data")
             return {"appointments": _get_mock_appointments()}
-        
+
     except Exception as e:
         print(f"⚠️ Supabase query failed: {e}")
         import traceback
         traceback.print_exc()
         return {"appointments": _get_mock_appointments()}
-    
+
     # Process appointments and calculate risk scores
     appointments = []
     for row in appointments_data:
         appointment_data = {
             "patient_id": str(row.get("id", "")),
-            "patient_name": row.get("patients", {}).get("patient_name", "Unknown") if isinstance(row.get("patients"), dict) else "Unknown",
+            "patient_name": row.get("patients", {}).get("patient_name", "Unknown") if isinstance(row.get("patients"), dict) else (row.get("patient_name", "Unknown") if row.get("patient_name") else "Unknown"),
             "patient_phone": "+10000000000",  # Not exposed by secure query
             "appointment_date": str(row.get("appointment_date", "")),
             "appointment_time": str(row.get("appointment_time", "")).split(".")[0][:8] if row.get("appointment_time") else "00:00:00",
-            "provider_name": row.get("providers", {}).get("provider_name", "Unknown") if isinstance(row.get("providers"), dict) else "Unknown",
+            "provider_name": row.get("providers", {}).get("provider_name", "Unknown") if isinstance(row.get("providers"), dict) else (row.get("provider_name", "Unknown") if row.get("provider_name") else "Unknown"),
             "late_arrival_count": 0,
             "cancellation_count": 0,
             "is_first_visit": False,
             "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
         }
-        
+
         # Calculate risk score using ZenticPro agent
         risk_agent = NoShowRiskAgent()
         risk_result = risk_agent.evaluate_risk(appointment_data)
-        
+
         appointment = Appointment(
             patient_id=appointment_data["patient_id"],
             patient_name=appointment_data["patient_name"],
@@ -188,9 +188,9 @@ async def get_appointments():
             risk_category=risk_result["risk_category"],
             recommendation=risk_result["recommendation"]
         )
-        
+
         appointments.append(appointment)
-    
+
     return {"appointments": appointments}
 
 
@@ -199,7 +199,7 @@ async def health_check():
     """Health check endpoint."""
     supabase_status = "connected" if supabase else "not configured"
     return {
-        "status": "healthy", 
+        "status": "healthy",
         "version": "1.0.0",
         "supabase": supabase_status
     }
@@ -214,25 +214,25 @@ async def test_supabase_connection():
         "has_anon_key": bool(os.getenv("SUPABASE_ANON_KEY")),
         "url_preview": f"{SUPABASE_URL[:30]}..." if SUPABASE_URL else None,
     }
-    
+
     if not supabase:
         result["error"] = "Supabase client not initialized"
         return result
-    
+
     try:
         # Test query using official Supabase client
         test_result = supabase.table("appointments").select("*").limit(5).execute()
-        
+
         result["success"] = True
         result["count"] = len(test_result.data)
         result["sample_data"] = test_result.data[:1] if test_result.data else []
         print(f"✅ Supabase test query returned {result['count']} rows")
-        
+
     except Exception as e:
         result["success"] = False
         result["error"] = str(e)
         print(f"❌ Supabase test failed: {e}")
-    
+
     return result
 
 
@@ -241,7 +241,7 @@ async def send_intervention(appointment: Appointment):
     """Send intervention (SMS/call) to patient."""
     try:
         intervention_agent = PatientInterventionAgent()
-        
+
         # Determine action based on risk category
         if appointment.risk_category == "HIGH":
             actions = ["sms_confirmation", "voice_call"]
@@ -249,7 +249,7 @@ async def send_intervention(appointment: Appointment):
             actions = ["sms_reminder"]
         else:
             actions = ["sms_standard"]
-        
+
         results = []
         for action in actions:
             result = intervention_agent.execute_action(
@@ -259,9 +259,9 @@ async def send_intervention(appointment: Appointment):
                 action_type=action
             )
             results.append(result)
-        
+
         return {"success": True, "interventions_sent": results}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
