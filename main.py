@@ -208,6 +208,60 @@ async def score_batch(appointments: List[Appointment]):
 
 
 @app.get("/appointments")
+async def _get_mock_appointments():
+    """Return mock appointment data for development."""
+    return {
+        "count": 4,
+        "appointments": [
+            {
+                "patient_id": "1",
+                "patient_name": "John Doe",
+                "patient_phone": "+15551234567",
+                "appointment_date": datetime.now().strftime("%Y-%m-%d"),
+                "appointment_time": "14:00:00",
+                "provider_name": "Dr. Smith",
+                "risk_score": 0.85,
+                "risk_category": "HIGH",
+                "recommendation": "Send confirmation SMS + call if no response"
+            },
+            {
+                "patient_id": "2",
+                "patient_name": "Jane Smith",
+                "patient_phone": "+15559876543",
+                "appointment_date": datetime.now().strftime("%Y-%m-%d"),
+                "appointment_time": "10:30:00",
+                "provider_name": "Dr. Johnson",
+                "risk_score": 0.45,
+                "risk_category": "MEDIUM",
+                "recommendation": "Send reminder SMS 24 hours before"
+            },
+            {
+                "patient_id": "3",
+                "patient_name": "Bob Wilson",
+                "patient_phone": "+15555678901",
+                "appointment_date": (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
+                "appointment_time": "09:00:00",
+                "provider_name": "Dr. Smith",
+                "risk_score": 0.25,
+                "risk_category": "LOW",
+                "recommendation": "Standard reminder only"
+            },
+            {
+                "patient_id": "4",
+                "patient_name": "Alice Brown",
+                "patient_phone": "+15553456789",
+                "appointment_date": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d"),
+                "appointment_time": "15:30:00",
+                "provider_name": "Dr. Martinez",
+                "risk_score": 0.72,
+                "risk_category": "HIGH",
+                "recommendation": "Send confirmation SMS + call if no response"
+            }
+        ]
+    }
+
+
+@app.get("/appointments")
 async def get_appointments(days_ahead: int = 7):
     """
     Get upcoming appointments from Supabase with risk scores.
@@ -217,132 +271,49 @@ async def get_appointments(days_ahead: int = 7):
     """
     try:
         supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_ANON_KEY")
+        # Use service role key for backend access (full table access needed)
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", os.getenv("SUPABASE_ANON_KEY"))
         
         if not supabase_url or not supabase_key:
             print(f"⚠️ Supabase credentials missing: URL={bool(supabase_url)}, Key={bool(supabase_key)}")
             # Return mock data for development
-            return {
-                "count": 4,
-                "appointments": [
-                    {
-                        "patient_id": "1",
-                        "patient_name": "John Doe",
-                        "patient_phone": "+15551234567",
-                        "appointment_date": datetime.now().strftime("%Y-%m-%d"),
-                        "appointment_time": "14:00:00",
-                        "provider_name": "Dr. Smith",
-                        "risk_score": 0.85,
-                        "risk_category": "HIGH",
-                        "recommendation": "Send confirmation SMS + call if no response"
-                    },
-                    {
-                        "patient_id": "2",
-                        "patient_name": "Jane Smith",
-                        "patient_phone": "+15559876543",
-                        "appointment_date": datetime.now().strftime("%Y-%m-%d"),
-                        "appointment_time": "10:30:00",
-                        "provider_name": "Dr. Johnson",
-                        "risk_score": 0.45,
-                        "risk_category": "MEDIUM",
-                        "recommendation": "Send reminder SMS 24 hours before"
-                    }
-                ]
-            }
+            return _get_mock_appointments()
         
         # Calculate date range
         today = datetime.now().date()
         end_date = today + timedelta(days=days_ahead)
         
-        # Fetch appointments from Supabase
+        # Fetch appointments from Supabase using the secure function
         try:
             async with httpx.AsyncClient() as client:
-                url = f"{supabase_url}/rest/v1/appointments"
+                # Call the get_public_appointments() RPC function
+                url = f"{supabase_url}/rpc/get_public_appointments"
                 headers = {
                     "Authorization": f"Bearer {supabase_key}",
-                    "Content-Type": "application/json",
-                    "Prefer": "count=exact"
+                    "Content-Type": "application/json"
                 }
                 
-                # Build query: upcoming appointments, joined with patient and provider data
-                query_params = {
-                    "select": "*,patients(patient_name,patient_phone),providers(provider_name)",
-                    "appointment_date.gte": today.isoformat(),
-                    "appointment_date.lte": end_date.isoformat(),
-                    "status.not.in.": "(completed,cancelled)",
-                    "order": "appointment_date.asc,appointment_time.asc"
-                }
-                
-                response = await client.get(url, headers=headers, params=query_params)
+                response = await client.get(url, headers=headers)
                 response.raise_for_status()
-                data = response.json()
+                appointments_data = response.json()
         except Exception as supabase_error:
             print(f"⚠️ Supabase connection failed: {supabase_error}")
-            # Return mock data if Supabase fails
-            return {
-                "count": 4,
-                "appointments": [
-                    {
-                        "patient_id": "1",
-                        "patient_name": "John Doe",
-                        "patient_phone": "+15551234567",
-                        "appointment_date": datetime.now().strftime("%Y-%m-%d"),
-                        "appointment_time": "14:00:00",
-                        "provider_name": "Dr. Smith",
-                        "risk_score": 0.85,
-                        "risk_category": "HIGH",
-                        "recommendation": "Send confirmation SMS + call if no response"
-                    },
-                    {
-                        "patient_id": "2",
-                        "patient_name": "Jane Smith",
-                        "patient_phone": "+15559876543",
-                        "appointment_date": datetime.now().strftime("%Y-%m-%d"),
-                        "appointment_time": "10:30:00",
-                        "provider_name": "Dr. Johnson",
-                        "risk_score": 0.45,
-                        "risk_category": "MEDIUM",
-                        "recommendation": "Send reminder SMS 24 hours before"
-                    },
-                    {
-                        "patient_id": "3",
-                        "patient_name": "Bob Wilson",
-                        "patient_phone": "+15555678901",
-                        "appointment_date": (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
-                        "appointment_time": "09:00:00",
-                        "provider_name": "Dr. Smith",
-                        "risk_score": 0.25,
-                        "risk_category": "LOW",
-                        "recommendation": "Standard reminder only"
-                    },
-                    {
-                        "patient_id": "4",
-                        "patient_name": "Alice Brown",
-                        "patient_phone": "+15553456789",
-                        "appointment_date": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d"),
-                        "appointment_time": "15:30:00",
-                        "provider_name": "Dr. Martinez",
-                        "risk_score": 0.72,
-                        "risk_category": "HIGH",
-                        "recommendation": "Send confirmation SMS + call if no response"
-                    }
-                ]
-            }
+            return _get_mock_appointments()
         
         # Process appointments and calculate risk scores
         appointments = []
-        for row in data:
+        for row in appointments_data:
             appointment_data = {
-                "patient_id": str(row["id"]),
-                "patient_name": row["patients"]["patient_name"] if row["patients"] else "Unknown",
-                "patient_phone": row["patients"]["patient_phone"] if row["patients"] else "+10000000000",
-                "appointment_date": row["appointment_date"],
-                "appointment_time": str(row["appointment_time"]).split(".")[0][:8],  # Format: HH:MM:SS
-                "provider_name": row["providers"]["provider_name"] if row["providers"] else "Unknown",
-                "late_arrival_count": row.get("late_arrival_count", 0) or 0,
-                "cancellation_count": row.get("cancellation_count", 0) or 0,
-                "is_first_visit": row.get("is_first_visit", False) or False,
-                "days_until_appointment": (datetime.strptime(row["appointment_date"], "%Y-%m-%d").date() - today).days
+                "patient_id": str(row.get("id", "")),
+                "patient_name": row.get("patient_name", "Unknown"),
+                "patient_phone": "+10000000000",  # Not exposed by secure function
+                "appointment_date": row.get("appointment_date", ""),
+                "appointment_time": str(row.get("appointment_time", "00:00:00")).split(".")[0][:8],
+                "provider_name": row.get("provider_name", "Unknown"),
+                "late_arrival_count": 0,  # Not available from public function
+                "cancellation_count": 0,
+                "is_first_visit": False,
+                "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
             }
             
             # Calculate risk score using existing agent
@@ -352,8 +323,8 @@ async def get_appointments(days_ahead: int = 7):
                     "late_arrival_count": appointment_data["late_arrival_count"],
                     "cancellation_count": appointment_data["cancellation_count"],
                     "is_first_visit": appointment_data["is_first_visit"],
-                    "appointment_day": datetime.strptime(row["appointment_date"], "%Y-%m-%d").strftime("%A").lower(),
-                    "appointment_hour": int(str(row["appointment_time"]).split(":")[0]),
+                    "appointment_day": datetime.strptime(str(row.get("appointment_date", "2026-01-01")), "%Y-%m-%d").strftime("%A").lower(),
+                    "appointment_hour": int(str(row.get("appointment_time", "12:00:00")).split(":")[0]),
                     "days_until_appointment": appointment_data["days_until_appointment"]
                 }
                 
