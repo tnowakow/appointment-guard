@@ -123,10 +123,6 @@ async def get_appointments():
     - Appointment details (date, time, provider)
     - Risk assessment (score, category, recommendation)
     """
-    # Initialize lookup dictionaries at function scope
-    patient_lookup = {}
-    provider_lookup = {}
-    
     try:
         # Fetch upcoming appointments from Supabase using official client
         today = datetime.now().date()
@@ -134,15 +130,11 @@ async def get_appointments():
         print(f"🔍 Fetching appointments from Supabase for {today}+")
         print(f"Supabase URL: {SUPABASE_URL}")
         
-        # First, get all appointments with their foreign keys
+        # Simple query - get all columns from appointments table
         result = (
             supabase.table("appointments")
-            .select(
-                "id,appointment_date,appointment_time,status," 
-                "late_arrival_count,cancellation_count,is_first_visit,"
-                "patient_id,provider_id"  # Get the FK IDs
-            )
-            .not_("status", "in", "(completed,cancelled)")
+            .select("*")  # Get ALL columns to see what's available
+            .eq("status", "scheduled")  # Filter by status using eq() instead of not_()
             .order("appointment_date")
             .order("appointment_time")
             .limit(50)
@@ -150,72 +142,43 @@ async def get_appointments():
         )
         appointments_data = result.data
         print(f"✅ Got {len(appointments_data)} appointments from Supabase")
-        if appointments_data:
-            first_appointment = appointments_data[0]
-            print(f"First appointment keys: {list(first_appointment.keys())}")
-            print(f"First appointment: {first_appointment}")
         
         if not appointments_data:
             print("⚠️ No appointments found, returning mock data")
             return {"appointments": _get_mock_appointments()}
         
-        # Now fetch patient and provider names in bulk
-        patient_ids = list(set([a["patient_id"] for a in appointments_data if a.get("patient_id")]))
-        provider_ids = list(set([a["provider_id"] for a in appointments_data if a.get("provider_id")]))
-        
-        print(f"🔍 Fetching {len(patient_ids)} patients and {len(provider_ids)} providers...")
-        print(f"Sample patient_id: {patient_ids[0] if patient_ids else 'none'}")
-        
-        if patient_ids:
-            try:
-                patients_result = supabase.table("patients").select("id,patient_name").in_("id", patient_ids).execute()
-                print(f"Patients query returned {len(patients_result.data)} results")
-                for p in patients_result.data:
-                    patient_lookup[p["id"]] = p.get("patient_name", "Unknown") or "Unknown"
-                print(f"✅ Got {len(patient_lookup)} patient names")
-            except Exception as pe:
-                print(f"❌ Failed to fetch patients: {pe}")
-        
-        if provider_ids:
-            try:
-                providers_result = supabase.table("providers").select("id,provider_name").in_("id", provider_ids).execute()
-                print(f"Providers query returned {len(providers_result.data)} results")
-                for pr in providers_result.data:
-                    provider_lookup[pr["id"]] = pr.get("provider_name", "Unknown") or "Unknown"
-                print(f"✅ Got {len(provider_lookup)} provider names")
-            except Exception as pe:
-                print(f"❌ Failed to fetch providers: {pe}")
+        # Log the first appointment to see what columns are available
+        first_appointment = appointments_data[0]
+        print(f"📋 Available columns: {list(first_appointment.keys())}")
+        print(f"First appointment: {first_appointment}")
         
     except Exception as e:
         print(f"❌ Supabase query failed: {e}")
         import traceback
         traceback.print_exc()
-        # Try simpler query without joins as fallback
-        try:
-            print("⚠️ Trying simple query without joins...")
-            result = supabase.table("appointments").select("*").limit(10).execute()
-            appointments_data = result.data
-            print(f"✅ Simple query got {len(appointments_data)} appointments")
-            if not appointments_data:
-                return {"appointments": _get_mock_appointments()}
-        except Exception as e2:
-            print(f"❌ Simple query also failed: {e2}")
-            return {"appointments": _get_mock_appointments(), "error": str(e)}
+        return {"appointments": _get_mock_appointments(), "error": str(e)}
 
     # Process appointments and calculate risk scores
     try:
         appointments = []
         for row in appointments_data:
-            patient_name = patient_lookup.get(row.get("patient_id"), "Unknown") or "Unknown"
-            provider_name = provider_lookup.get(row.get("provider_id"), "Unknown") or "Unknown"
+            # Check if patient_name/provider_name are directly in the appointments table
+            patient_name = row.get("patient_name") or row.get("patient", {}) or "Unknown"
+            provider_name = row.get("provider_name") or row.get("provider", {}) or "Unknown"
+            
+            # Handle nested objects if present
+            if isinstance(patient_name, dict):
+                patient_name = patient_name.get("patient_name", "Unknown")
+            if isinstance(provider_name, dict):
+                provider_name = provider_name.get("provider_name", "Unknown")
             
             appointment_data = {
                 "patient_id": str(row.get("id", "")),
-                "patient_name": patient_name,
-                "patient_phone": "+10000000000",  # Masked for security
+                "patient_name": patient_name or "Unknown",
+                "patient_phone": row.get("patient_phone", "+10000000000"),  # Masked for security
                 "appointment_date": str(row.get("appointment_date", "")),
                 "appointment_time": str(row.get("appointment_time", "")).split(".")[0][:8] if row.get("appointment_time") else "00:00:00",
-                "provider_name": provider_name,
+                "provider_name": provider_name or "Unknown",
                 "late_arrival_count": int(row.get("late_arrival_count", 0) or 0),
                 "cancellation_count": int(row.get("cancellation_count", 0) or 0),
                 "is_first_visit": bool(row.get("is_first_visit", False)),
@@ -282,7 +245,8 @@ async def debug_supabase():
         return {
             "status": "connected",
             "count": len(result.data),
-            "sample": result.data[:1] if result.data else None
+            "sample": result.data[:1] if result.data else None,
+            "columns": list(result.data[0].keys()) if result.data else []
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
