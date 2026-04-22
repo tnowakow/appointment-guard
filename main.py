@@ -127,15 +127,15 @@ async def get_appointments():
     try:
         # Fetch upcoming appointments from Supabase using official client
         today = datetime.now().date()
-
+        
         print(f"🔍 Fetching appointments from Supabase for {today}+")
         print(f"Supabase URL: {SUPABASE_URL}")
-
+        
         # Query with foreign key joins to get patient and provider names
         result = (
             supabase.table("appointments")
             .select(
-                "id,appointment_date,appointment_time,status,"
+                "id,appointment_date,appointment_time,status," 
                 "late_arrival_count,cancellation_count,is_first_visit,"
                 "patients!inner(patient_name),"  # Join with patients table
                 "providers!inner(provider_name)"   # Join with providers table
@@ -150,10 +150,25 @@ async def get_appointments():
         print(f"✅ Got {len(appointments_data)} appointments from Supabase with joins")
         if appointments_data:
             print(f"First appointment: {appointments_data[0]}")
-
+        
         if not appointments_data:
             print("⚠️ No appointments found, returning mock data")
             return {"appointments": _get_mock_appointments()}
+    except Exception as e:
+        print(f"❌ Supabase query failed: {e}")
+        import traceback
+        traceback.print_exc()
+        # Try simpler query without joins as fallback
+        try:
+            print("⚠️ Trying simple query without joins...")
+            result = supabase.table("appointments").select("*").limit(10).execute()
+            appointments_data = result.data
+            print(f"✅ Simple query got {len(appointments_data)} appointments")
+            if not appointments_data:
+                return {"appointments": _get_mock_appointments()}
+        except Exception as e2:
+            print(f"❌ Simple query also failed: {e2}")
+            return {"appointments": _get_mock_appointments(), "error": str(e)}
 
     except Exception as e:
         print(f"⚠️ Supabase query failed: {e}")
@@ -168,12 +183,12 @@ async def get_appointments():
             # Extract nested patient/provider data from Supabase join result
             patients_obj = row.get("patients", {})
             providers_obj = row.get("providers", {})
-            
-            patient_name = ("Unknown" if not isinstance(patients_obj, dict) else 
+
+            patient_name = ("Unknown" if not isinstance(patients_obj, dict) else
                           patients_obj.get("patient_name", "Unknown") or "Unknown")
-            provider_name = ("Unknown" if not isinstance(providers_obj, dict) else 
+            provider_name = ("Unknown" if not isinstance(providers_obj, dict) else
                            providers_obj.get("provider_name", "Unknown") or "Unknown")
-            
+
             appointment_data = {
                 "patient_id": str(row.get("id", "")),
                 "patient_name": patient_name,
@@ -186,13 +201,13 @@ async def get_appointments():
                 "is_first_visit": bool(row.get("is_first_visit", False)),
                 "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
             }
-            
+
             # Simple synchronous risk calculation (no async agent needed)
             has_late_history = appointment_data["late_arrival_count"] > 2
             has_cancel_history = appointment_data["cancellation_count"] > 1
             is_first_time = appointment_data["is_first_visit"]
             days_until = appointment_data["days_until_appointment"]
-            
+
             # Calculate risk score (0-1)
             risk_score = 0.25  # Base risk
             if has_late_history:
@@ -203,9 +218,9 @@ async def get_appointments():
                 risk_score += 0.2
             if days_until <= 1:  # Last-minute booking
                 risk_score += 0.15
-            
+
             risk_score = min(risk_score, 1.0)  # Cap at 1.0
-            
+
             # Convert to category and recommendation
             if risk_score >= 0.7:
                 risk_category = "HIGH"
@@ -216,7 +231,7 @@ async def get_appointments():
             else:
                 risk_category = "LOW"
                 recommendation = "Standard reminder 24 hours before"
-            
+
             appointment = Appointment(
                 patient_id=appointment_data["patient_id"],
                 patient_name=appointment_data["patient_name"],
@@ -228,15 +243,15 @@ async def get_appointments():
                 risk_category=risk_category,
                 recommendation=recommendation
             )
-            
+
             appointments.append(appointment)
-        
+
         return {"appointments": appointments}
     except Exception as e:
         print(f"❌ Appointment processing failed: {e}")
         import traceback
         traceback.print_exc()
-        return {"appointments": _get_mock_appointments(), "processing_error": str(e)}
+        return {"appointments": _get_mock_appointments(), "processing_error": str(e), "original_error": str(e)}
 
 
 @app.get("/health")
