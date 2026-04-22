@@ -310,10 +310,9 @@ async def get_appointments(days_ahead: int = 7):
                     print(f"❌ Error response: {response.text[:500]}")
                 
                 response.raise_for_status()
-                result = response.json()
-                appointments_data = result.get("data", [])
-                count = int(result.get("count", len(appointments_data)))
-                print(f"✅ Got {len(appointments_data)} appointments from Supabase")
+                appointments_data = response.json()  # REST API returns list directly
+                count = len(appointments_data)
+                print(f"✅ Got {count} appointments from Supabase")
         except httpx.HTTPError as e:
             print(f"⚠️ HTTP error: {e}")
             return _get_mock_appointments()
@@ -421,10 +420,10 @@ async def test_supabase_connection():
             response = await client.get(url, headers=headers, params=params)
             result["status_code"] = response.status_code
             if response.status_code == 200:
-                data = response.json()
+                data = response.json()  # REST API returns list directly
                 result["success"] = True
-                result["count"] = int(data.get("count", 0))
-                result["sample_data"] = data.get("data", [])[:1]
+                result["count"] = len(data) if isinstance(data, list) else "unknown"
+                result["sample_data"] = data[:1] if isinstance(data, list) else [data]
             else:
                 result["success"] = False
                 result["error"] = response.text[:200]
