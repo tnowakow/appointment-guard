@@ -123,6 +123,10 @@ async def get_appointments():
     - Appointment details (date, time, provider)
     - Risk assessment (score, category, recommendation)
     """
+    # Initialize lookup dictionaries at function scope
+    patient_lookup = {}
+    provider_lookup = {}
+    
     try:
         # Fetch upcoming appointments from Supabase using official client
         today = datetime.now().date()
@@ -158,10 +162,6 @@ async def get_appointments():
         provider_ids = list(set([a["provider_id"] for a in appointments_data if a.get("provider_id")]))
         
         print(f"🔍 Fetching {len(patient_ids)} patients and {len(provider_ids)} providers...")
-        
-        # Create lookup dictionaries
-        patient_lookup = {}
-        provider_lookup = {}
         
         if patient_ids:
             patients_result = supabase.table("patients").select("id,patient_name").in_("id", patient_ids).execute()
