@@ -127,15 +127,15 @@ async def get_appointments():
     try:
         # Fetch upcoming appointments from Supabase using official client
         today = datetime.now().date()
-        
+
         print(f"🔍 Fetching appointments from Supabase for {today}+")
         print(f"Supabase URL: {SUPABASE_URL}")
-        
+
         # Query with foreign key joins to get patient and provider names
         result = (
             supabase.table("appointments")
             .select(
-                "id,appointment_date,appointment_time,status," 
+                "id,appointment_date,appointment_time,status,"
                 "late_arrival_count,cancellation_count,is_first_visit,"
                 "patients!inner(patient_name),"  # Join with patients table
                 "providers!inner(provider_name)"   # Join with providers table
@@ -150,7 +150,7 @@ async def get_appointments():
         print(f"✅ Got {len(appointments_data)} appointments from Supabase with joins")
         if appointments_data:
             print(f"First appointment: {appointments_data[0]}")
-        
+
         if not appointments_data:
             print("⚠️ No appointments found, returning mock data")
             return {"appointments": _get_mock_appointments()}
@@ -180,13 +180,18 @@ async def get_appointments():
     try:
         appointments = []
         for row in appointments_data:
+            print(f"Processing appointment: {row}")  # Debug log
+            
             # Extract nested patient/provider data from Supabase join result
             patients_obj = row.get("patients", {})
             providers_obj = row.get("providers", {})
-
-            patient_name = ("Unknown" if not isinstance(patients_obj, dict) else
+            
+            print(f"patients_obj type: {type(patients_obj)}, value: {patients_obj}")
+            print(f"providers_obj type: {type(providers_obj)}, value: {providers_obj}")
+            
+            patient_name = ("Unknown" if not isinstance(patients_obj, dict) else 
                           patients_obj.get("patient_name", "Unknown") or "Unknown")
-            provider_name = ("Unknown" if not isinstance(providers_obj, dict) else
+            provider_name = ("Unknown" if not isinstance(providers_obj, dict) else 
                            providers_obj.get("provider_name", "Unknown") or "Unknown")
 
             appointment_data = {
