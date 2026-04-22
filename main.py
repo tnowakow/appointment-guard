@@ -297,9 +297,8 @@ async def get_appointments(days_ahead: int = 7):
                 # Build query with embedded joins for patient and provider data
                 params = {
                     "select": "id,patient_id,provider_id,appointment_date,appointment_time,status,patients(patient_name),providers(provider_name)",
-                    "appointment_date.gte": today.isoformat(),
-                    "status.not.in.": "(completed,cancelled)",
                     "order": "appointment_date.asc,appointment_time.asc"
+                    # Removed filters temporarily to debug — get ALL appointments first
                 }
                 
                 print(f"🔍 Calling Supabase REST: {url}")
@@ -414,7 +413,7 @@ async def test_supabase_connection():
             }
             params = {
                 "select": "id,patient_id,appointment_date,patients(patient_name)",
-                "limit": "2"
+                # Removed limit to see all data
             }
             
             response = await client.get(url, headers=headers, params=params)
