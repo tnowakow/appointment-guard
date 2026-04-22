@@ -285,25 +285,31 @@ async def get_appointments(days_ahead: int = 7):
         
         # Fetch appointments from Supabase using the secure function
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 # Call the get_public_appointments() RPC function
                 url = f"{supabase_url}/rpc/get_public_appointments"
                 headers = {
-                    "Authorization": f"Bearer {supabase_key}",
+                    "apikey": supabase_key,  # Supabase uses 'apikey' header, not 'Authorization'
                     "Content-Type": "application/json"
                 }
                 
                 print(f"🔍 Calling Supabase RPC: {url}")
+                print(f"🔑 Using key (first 20 chars): {supabase_key[:20]}...")
                 response = await client.get(url, headers=headers)
                 print(f"📊 Response status: {response.status_code}")
                 if response.status_code != 200:
-                    print(f"❌ Error response: {response.text[:200]}")
+                    print(f"❌ Error response: {response.text[:500]}")
                 
                 response.raise_for_status()
                 appointments_data = response.json()
                 print(f"✅ Got {len(appointments_data)} appointments from Supabase")
+        except httpx.HTTPError as e:
+            print(f"⚠️ HTTP error: {e}")
+            return _get_mock_appointments()
         except Exception as supabase_error:
             print(f"⚠️ Supabase connection failed: {supabase_error}")
+            import traceback
+            traceback.print_exc()
             return _get_mock_appointments()
         
         # Process appointments and calculate risk scores
