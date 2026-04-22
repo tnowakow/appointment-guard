@@ -150,40 +150,46 @@ async def get_appointments():
         return {"appointments": _get_mock_appointments()}
 
     # Process appointments and calculate risk scores
-    appointments = []
-    for row in appointments_data:
-        appointment_data = {
-            "patient_id": str(row.get("id", "")),
-            "patient_name": row.get("patient_name", "Unknown"),  # Direct from flat data
-            "patient_phone": "+10000000000",  # Not exposed by secure query
-            "appointment_date": str(row.get("appointment_date", "")),
-            "appointment_time": str(row.get("appointment_time", "")).split(".")[0][:8] if row.get("appointment_time") else "00:00:00",
-            "provider_name": row.get("provider_name", "Unknown"),  # Direct from flat data
-            "late_arrival_count": row.get("late_arrival_count", 0) or 0,
-            "cancellation_count": row.get("cancellation_count", 0) or 0,
-            "is_first_visit": bool(row.get("is_first_visit", False)),
-            "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
-        }
+    try:
+        appointments = []
+        for row in appointments_data:
+            appointment_data = {
+                "patient_id": str(row.get("id", "")),
+                "patient_name": row.get("patient_name", "Unknown") or "Unknown",  # Direct from flat data
+                "patient_phone": "+10000000000",  # Not exposed by secure query
+                "appointment_date": str(row.get("appointment_date", "")),
+                "appointment_time": str(row.get("appointment_time", "")).split(".")[0][:8] if row.get("appointment_time") else "00:00:00",
+                "provider_name": row.get("provider_name", "Unknown") or "Unknown",  # Direct from flat data
+                "late_arrival_count": int(row.get("late_arrival_count", 0) or 0),
+                "cancellation_count": int(row.get("cancellation_count", 0) or 0),
+                "is_first_visit": bool(row.get("is_first_visit", False)),
+                "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
+            }
+            
+            # Calculate risk score using ZenticPro agent
+            risk_agent = NoShowRiskAgent()
+            risk_result = risk_agent.evaluate_risk(appointment_data)
+            
+            appointment = Appointment(
+                patient_id=appointment_data["patient_id"],
+                patient_name=appointment_data["patient_name"],
+                patient_phone=appointment_data["patient_phone"],
+                appointment_date=appointment_data["appointment_date"],
+                appointment_time=appointment_data["appointment_time"],
+                provider_name=appointment_data["provider_name"],
+                risk_score=risk_result["risk_score"],
+                risk_category=risk_result["risk_category"],
+                recommendation=risk_result["recommendation"]
+            )
+            
+            appointments.append(appointment)
         
-        # Calculate risk score using ZenticPro agent
-        risk_agent = NoShowRiskAgent()
-        risk_result = risk_agent.evaluate_risk(appointment_data)
-        
-        appointment = Appointment(
-            patient_id=appointment_data["patient_id"],
-            patient_name=appointment_data["patient_name"],
-            patient_phone=appointment_data["patient_phone"],
-            appointment_date=appointment_data["appointment_date"],
-            appointment_time=appointment_data["appointment_time"],
-            provider_name=appointment_data["provider_name"],
-            risk_score=risk_result["risk_score"],
-            risk_category=risk_result["risk_category"],
-            recommendation=risk_result["recommendation"]
-        )
-        
-        appointments.append(appointment)
-    
-    return {"appointments": appointments}
+        return {"appointments": appointments}
+    except Exception as e:
+        print(f"❌ Appointment processing failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"appointments": _get_mock_appointments(), "processing_error": str(e)}
 
 
 @app.get("/health")
