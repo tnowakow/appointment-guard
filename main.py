@@ -288,8 +288,10 @@ async def get_appointments(days_ahead: int = 7):
             async with httpx.AsyncClient(timeout=10.0) as client:
                 # Use REST API with embedded selects (more reliable than RPC)
                 url = f"{supabase_url}/rest/v1/appointments"
+                
+                # Use Authorization header for service role key
                 headers = {
-                    "apikey": supabase_key,
+                    "Authorization": f"Bearer {supabase_key}",
                     "Content-Type": "application/json",
                     "Prefer": "count=exact"
                 }
@@ -412,8 +414,10 @@ async def test_supabase_connection():
         async with httpx.AsyncClient(timeout=10.0) as client:
             # Try multiple approaches to diagnose the issue
             url = f"{supabase_url}/rest/v1/appointments"
+            
+            # Use Authorization header for service role key (newer Supabase auth)
             headers = {
-                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
                 "Content-Type": "application/json",
                 "Prefer": "count=exact"
             }
