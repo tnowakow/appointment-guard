@@ -289,9 +289,9 @@ async def get_appointments(days_ahead: int = 7):
                 # Use REST API with embedded selects (more reliable than RPC)
                 url = f"{supabase_url}/rest/v1/appointments"
                 
-                # Use Authorization header for service role key
+                # Supabase REST API requires 'apikey' header
                 headers = {
-                    "Authorization": f"Bearer {supabase_key}",
+                    "apikey": supabase_key,
                     "Content-Type": "application/json",
                     "Prefer": "count=exact"
                 }
@@ -415,9 +415,9 @@ async def test_supabase_connection():
             # Try multiple approaches to diagnose the issue
             url = f"{supabase_url}/rest/v1/appointments"
             
-            # Use Authorization header for service role key (newer Supabase auth)
+            # Supabase REST API requires 'apikey' header (not Authorization)
             headers = {
-                "Authorization": f"Bearer {supabase_key}",
+                "apikey": supabase_key,
                 "Content-Type": "application/json",
                 "Prefer": "count=exact"
             }
