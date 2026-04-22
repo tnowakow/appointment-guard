@@ -162,18 +162,27 @@ async def get_appointments():
         provider_ids = list(set([a["provider_id"] for a in appointments_data if a.get("provider_id")]))
         
         print(f"🔍 Fetching {len(patient_ids)} patients and {len(provider_ids)} providers...")
+        print(f"Sample patient_id: {patient_ids[0] if patient_ids else 'none'}")
         
         if patient_ids:
-            patients_result = supabase.table("patients").select("id,patient_name").in_("id", patient_ids).execute()
-            for p in patients_result.data:
-                patient_lookup[p["id"]] = p.get("patient_name", "Unknown") or "Unknown"
-            print(f"✅ Got {len(patient_lookup)} patient names")
+            try:
+                patients_result = supabase.table("patients").select("id,patient_name").in_("id", patient_ids).execute()
+                print(f"Patients query returned {len(patients_result.data)} results")
+                for p in patients_result.data:
+                    patient_lookup[p["id"]] = p.get("patient_name", "Unknown") or "Unknown"
+                print(f"✅ Got {len(patient_lookup)} patient names")
+            except Exception as pe:
+                print(f"❌ Failed to fetch patients: {pe}")
         
         if provider_ids:
-            providers_result = supabase.table("providers").select("id,provider_name").in_("id", provider_ids).execute()
-            for pr in providers_result.data:
-                provider_lookup[pr["id"]] = pr.get("provider_name", "Unknown") or "Unknown"
-            print(f"✅ Got {len(provider_lookup)} provider names")
+            try:
+                providers_result = supabase.table("providers").select("id,provider_name").in_("id", provider_ids).execute()
+                print(f"Providers query returned {len(providers_result.data)} results")
+                for pr in providers_result.data:
+                    provider_lookup[pr["id"]] = pr.get("provider_name", "Unknown") or "Unknown"
+                print(f"✅ Got {len(provider_lookup)} provider names")
+            except Exception as pe:
+                print(f"❌ Failed to fetch providers: {pe}")
         
     except Exception as e:
         print(f"❌ Supabase query failed: {e}")
