@@ -392,6 +392,48 @@ async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "version": "1.0.0"}
 
+@app.get("/debug/supabase-test")
+async def test_supabase_connection():
+    """Debug endpoint to test Supabase connection directly."""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_ANON_KEY")
+    
+    result = {
+        "has_url": bool(supabase_url),
+        "has_key": bool(supabase_key),
+        "url_preview": f"{supabase_url[:30]}..." if supabase_url else None,
+        "key_preview": f"{supabase_key[:20]}..." if supabase_key else None
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"{supabase_url}/rest/v1/appointments"
+            headers = {
+                "apikey": supabase_key,
+                "Content-Type": "application/json",
+                "Prefer": "count=exact"
+            }
+            params = {
+                "select": "id,patient_id,appointment_date,patients(patient_name)",
+                "limit": "2"
+            }
+            
+            response = await client.get(url, headers=headers, params=params)
+            result["status_code"] = response.status_code
+            if response.status_code == 200:
+                data = response.json()
+                result["success"] = True
+                result["count"] = int(data.get("count", 0))
+                result["sample_data"] = data.get("data", [])[:1]
+            else:
+                result["success"] = False
+                result["error"] = response.text[:200]
+    except Exception as e:
+        result["success"] = False
+        result["error"] = str(e)
+    
+    return result
+
 
 if __name__ == "__main__":
     import uvicorn
