@@ -410,21 +410,22 @@ async def test_supabase_connection():
     
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            # Try simple query first - just get all appointments
+            # Try multiple approaches to diagnose the issue
             url = f"{supabase_url}/rest/v1/appointments"
             headers = {
                 "apikey": supabase_key,
                 "Content-Type": "application/json",
                 "Prefer": "count=exact"
             }
-            params = {
-                "select": "*"
-            }
+            
+            # First, try to just list the table schema
+            params = {"select": "*", "limit": "10"}
             
             response = await client.get(url, headers=headers, params=params)
             result["status_code"] = response.status_code
             raw_response = response.text[:500]
             result["raw_response"] = raw_response
+            result["response_headers"] = dict(response.headers)
             
             if response.status_code == 200:
                 data = response.json()  # REST API returns list directly
