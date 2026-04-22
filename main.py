@@ -394,12 +394,16 @@ async def health_check():
 async def test_supabase_connection():
     """Debug endpoint to test Supabase connection directly."""
     supabase_url = os.getenv("SUPABASE_URL")
+    service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    anon_key = os.getenv("SUPABASE_ANON_KEY")
     # Use service role key for backend (bypasses RLS)
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", os.getenv("SUPABASE_ANON_KEY"))
+    supabase_key = service_key or anon_key
     
     result = {
         "has_url": bool(supabase_url),
-        "has_key": bool(supabase_key),
+        "has_service_key": bool(service_key),
+        "has_anon_key": bool(anon_key),
+        "using_key_type": "service_role" if service_key else "anon",
         "url_preview": f"{supabase_url[:30]}..." if supabase_url else None,
         "key_preview": f"{supabase_key[:20]}..." if supabase_key else None
     }
