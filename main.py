@@ -127,29 +127,18 @@ async def get_appointments():
     try:
         # Fetch upcoming appointments from Supabase using official client
         today = datetime.now().date()
-        
+
         print(f"🔍 Fetching appointments from Supabase for {today}+")
         print(f"Supabase URL: {SUPABASE_URL}")
-        
-        # Query appointments with joins for patient and provider data
-        result = (
-            supabase.table("appointments")
-            .select(
-                "id,patient_id,provider_id,appointment_date,appointment_time,status," 
-                "patients(patient_name),providers(provider_name)"
-            )
-            # Removed date filter temporarily to see all data
-            .not_("status", "in", "(completed,cancelled)")
-            .order("appointment_date")
-            .order("appointment_time")
-            .execute()
-        )
-        
+
+        # First, try simple query without joins
+        result = supabase.table("appointments").select("*").limit(10).execute()
         appointments_data = result.data
-        print(f"✅ Got {len(appointments_data)} appointments from Supabase")
+        print(f"✅ Got {len(appointments_data)} raw appointments from Supabase")
         if appointments_data:
+            print(f"First appointment keys: {list(appointments_data[0].keys())}")
             print(f"First appointment: {appointments_data[0]}")
-        
+
         if not appointments_data:
             print("⚠️ No appointments found, returning mock data")
             return {"appointments": _get_mock_appointments()}
@@ -165,21 +154,21 @@ async def get_appointments():
     for row in appointments_data:
         appointment_data = {
             "patient_id": str(row.get("id", "")),
-            "patient_name": row.get("patients", {}).get("patient_name", "Unknown") if isinstance(row.get("patients"), dict) else (row.get("patient_name", "Unknown") if row.get("patient_name") else "Unknown"),
+            "patient_name": row.get("patient_name", "Unknown"),  # Direct from flat data
             "patient_phone": "+10000000000",  # Not exposed by secure query
             "appointment_date": str(row.get("appointment_date", "")),
             "appointment_time": str(row.get("appointment_time", "")).split(".")[0][:8] if row.get("appointment_time") else "00:00:00",
-            "provider_name": row.get("providers", {}).get("provider_name", "Unknown") if isinstance(row.get("providers"), dict) else (row.get("provider_name", "Unknown") if row.get("provider_name") else "Unknown"),
-            "late_arrival_count": 0,
-            "cancellation_count": 0,
-            "is_first_visit": False,
+            "provider_name": row.get("provider_name", "Unknown"),  # Direct from flat data
+            "late_arrival_count": row.get("late_arrival_count", 0) or 0,
+            "cancellation_count": row.get("cancellation_count", 0) or 0,
+            "is_first_visit": bool(row.get("is_first_visit", False)),
             "days_until_appointment": (datetime.strptime(str(row.get("appointment_date", "")), "%Y-%m-%d").date() - today).days if row.get("appointment_date") else 0
         }
-
+        
         # Calculate risk score using ZenticPro agent
         risk_agent = NoShowRiskAgent()
         risk_result = risk_agent.evaluate_risk(appointment_data)
-
+        
         appointment = Appointment(
             patient_id=appointment_data["patient_id"],
             patient_name=appointment_data["patient_name"],
@@ -191,9 +180,9 @@ async def get_appointments():
             risk_category=risk_result["risk_category"],
             recommendation=risk_result["recommendation"]
         )
-
+        
         appointments.append(appointment)
-
+    
     return {"appointments": appointments}
 
 
