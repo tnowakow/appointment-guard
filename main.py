@@ -130,32 +130,18 @@ async def get_appointments():
         print(f"🔍 Fetching appointments from Supabase for {today}+")
         print(f"Supabase URL: {SUPABASE_URL}")
         
-        # Try embedded joins first
-        try:
-            result = (
-                supabase.from("appointments")
-                .select(
-                    "*,"
-                    "patients!patient_id (id,patient_name),"
-                    "providers!provider_id (id,provider_name)"
-                )
-                .eq("status", "scheduled")
-                .order("appointment_date")
-                .order("appointment_time")
-                .limit(50)
-                .execute()
+        # Query with embedded joins to get patient and provider names
+        result = (
+            supabase.table("appointments")
+            .select(
+                "*,patients!patient_id (id,patient_name),providers!provider_id (id,provider_name)"
             )
-        except Exception as join_error:
-            print(f"⚠️ Join failed: {join_error}, falling back to simple query")
-            result = (
-                supabase.table("appointments")
-                .select("*")
-                .eq("status", "scheduled")
-                .order("appointment_date")
-                .order("appointment_time")
-                .limit(50)
-                .execute()
-            )
+            .eq("status", "scheduled")
+            .order("appointment_date")
+            .order("appointment_time")
+            .limit(50)
+            .execute()
+        )
         appointments_data = result.data
         print(f"✅ Got {len(appointments_data)} appointments from Supabase")
         
