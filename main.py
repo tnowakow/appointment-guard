@@ -130,20 +130,32 @@ async def get_appointments():
         print(f"🔍 Fetching appointments from Supabase for {today}+")
         print(f"Supabase URL: {SUPABASE_URL}")
         
-        # Query with embedded joins to get patient and provider names
-        result = (
-            supabase.table("appointments")
-            .select(
-                "*," 
-                "patients!patient_id (patient_name),"
-                "providers!provider_id (provider_name)"
+        # Try embedded joins first
+        try:
+            result = (
+                supabase.from("appointments")
+                .select(
+                    "*,"
+                    "patients!patient_id (id,patient_name),"
+                    "providers!provider_id (id,provider_name)"
+                )
+                .eq("status", "scheduled")
+                .order("appointment_date")
+                .order("appointment_time")
+                .limit(50)
+                .execute()
             )
-            .eq("status", "scheduled")
-            .order("appointment_date")
-            .order("appointment_time")
-            .limit(50)
-            .execute()
-        )
+        except Exception as join_error:
+            print(f"⚠️ Join failed: {join_error}, falling back to simple query")
+            result = (
+                supabase.table("appointments")
+                .select("*")
+                .eq("status", "scheduled")
+                .order("appointment_date")
+                .order("appointment_time")
+                .limit(50)
+                .execute()
+            )
         appointments_data = result.data
         print(f"✅ Got {len(appointments_data)} appointments from Supabase")
         
@@ -153,11 +165,25 @@ async def get_appointments():
         
         # Log the first appointment to see the join structure
         first_appointment = appointments_data[0]
-        print(f"📋 First appointment keys: {list(first_appointment.keys())}")
-        if "patients" in first_appointment:
-            print(f"✅ Patients joined: {first_appointment['patients']}")
-        if "providers" in first_appointment:
-            print(f"✅ Providers joined: {first_appointment['providers']}")
+        all_keys = list(first_appointment.keys())
+        print(f"📋 First appointment keys: {all_keys}")
+        
+        has_patients_join = "patients" in all_keys or any("patient_name" in k.lower() for k in all_keys)
+        has_providers_join = "providers" in all_keys or any("provider_name" in k.lower() for k in all_keys)
+        
+        if has_patients_join:
+            print(f"✅ Patient data found")
+            if "patients" in first_appointment:
+                print(f"   patients field: {first_appointment['patients']}")
+        else:
+            print(f"❌ No patient join — need to create patients table or use two-step lookup")
+            
+        if has_providers_join:
+            print(f"✅ Provider data found")
+            if "providers" in first_appointment:
+                print(f"   providers field: {first_appointment['providers']}")
+        else:
+            print(f"❌ No provider join — need to create providers table or use two-step lookup")
         
     except Exception as e:
         print(f"❌ Supabase query failed: {e}")
