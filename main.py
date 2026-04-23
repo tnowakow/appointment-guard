@@ -130,11 +130,15 @@ async def get_appointments():
         print(f"🔍 Fetching appointments from Supabase for {today}+")
         print(f"Supabase URL: {SUPABASE_URL}")
         
-        # Simple query - get all columns from appointments table
+        # Query with embedded joins to get patient and provider names
         result = (
             supabase.table("appointments")
-            .select("*")  # Get ALL columns to see what's available
-            .eq("status", "scheduled")  # Filter by status using eq() instead of not_()
+            .select(
+                "*," 
+                "patients!patient_id (patient_name),"
+                "providers!provider_id (provider_name)"
+            )
+            .eq("status", "scheduled")
             .order("appointment_date")
             .order("appointment_time")
             .limit(50)
@@ -147,10 +151,13 @@ async def get_appointments():
             print("⚠️ No appointments found, returning mock data")
             return {"appointments": _get_mock_appointments()}
         
-        # Log the first appointment to see what columns are available
+        # Log the first appointment to see the join structure
         first_appointment = appointments_data[0]
-        print(f"📋 Available columns: {list(first_appointment.keys())}")
-        print(f"First appointment: {first_appointment}")
+        print(f"📋 First appointment keys: {list(first_appointment.keys())}")
+        if "patients" in first_appointment:
+            print(f"✅ Patients joined: {first_appointment['patients']}")
+        if "providers" in first_appointment:
+            print(f"✅ Providers joined: {first_appointment['providers']}")
         
     except Exception as e:
         print(f"❌ Supabase query failed: {e}")
@@ -162,15 +169,12 @@ async def get_appointments():
     try:
         appointments = []
         for row in appointments_data:
-            # Check if patient_name/provider_name are directly in the appointments table
-            patient_name = row.get("patient_name") or row.get("patient", {}) or "Unknown"
-            provider_name = row.get("provider_name") or row.get("provider", {}) or "Unknown"
+            # Extract patient and provider names from joined data
+            patients_obj = row.get("patients") or {}
+            providers_obj = row.get("providers") or {}
             
-            # Handle nested objects if present
-            if isinstance(patient_name, dict):
-                patient_name = patient_name.get("patient_name", "Unknown")
-            if isinstance(provider_name, dict):
-                provider_name = provider_name.get("provider_name", "Unknown")
+            patient_name = patients_obj.get("patient_name", "Unknown") if isinstance(patients_obj, dict) else "Unknown"
+            provider_name = providers_obj.get("provider_name", "Unknown") if isinstance(providers_obj, dict) else "Unknown"
             
             appointment_data = {
                 "patient_id": str(row.get("id", "")),
